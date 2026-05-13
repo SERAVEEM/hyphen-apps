@@ -5,7 +5,7 @@ initAdmin();
 
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
-const YAML = require('yamljs');
+const swaggerDocument = require('../swagger.json');
 
 const authRoutes = require('@/routes/auth.routes');
 const userRoutes = require('@/routes/user.routes');
@@ -20,7 +20,7 @@ const addressRoutes = require('@/routes/address.routes');
 const app = express();
 
 // Swagger docs
-const swaggerDocument = YAML.load('./swagger.yaml');
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Middleware
@@ -40,10 +40,14 @@ app.use('/api/v1/order', orderRoutes);
 app.use('/api/v1/payment', paymentRoutes);
 app.use('/api/v1/address', addressRoutes);
 
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Internal Server Error' });
+});
+app.get('/api/users', (req, res) => {
+  res.json([{ id: 1, name: 'John Doe' }]);
 });
 
 const PORT = process.env.PORT || 3000;
