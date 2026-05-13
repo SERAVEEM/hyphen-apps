@@ -81,6 +81,26 @@ const getAllAddresses = (req, res) => {
     });
 };
 
+// ================== LIHAT DETAIL ALAMAT ==================
+const getAddressDetail = (req, res) => {
+    const { addressId } = req.params;
+    const userId = req.user.id;
+    if(!addressId){
+        return res.status(400).json({ message: 'Id alamat harus disertakan' });
+    }
+    const user = users.find((u) => u.id === userId);
+    if (!user) {
+        return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
+    const address = user.addresses.find((a) => a.id === addressId);
+    if (!address) {
+        return res.status(404).json({ message: 'Alamat tidak ditemukan' });
+    }
+    res.status(200).json({
+        message: 'Berhasil mengambil detail alamat',
+        data: address
+    });
+};
 
 // ================== SET DEFAULT ALAMAT ==================
 const setDefaultAddress = (req, res) => {
@@ -130,4 +150,4 @@ const updateAddress = (req, res) => {
     });
 };
 
-module.exports = { addAddress, deleteAddress, getAllAddresses, setDefaultAddress, updateAddress };
+module.exports = { addAddress, deleteAddress, getAllAddresses, setDefaultAddress, updateAddress, getAddressDetail };

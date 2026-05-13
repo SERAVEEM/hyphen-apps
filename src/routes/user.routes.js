@@ -13,4 +13,4 @@ router.get('/wishlist', authMiddleware, getWishlist);
 router.post('/add-wishlist', authMiddleware, addWishlist);
 router.delete('/remove-wishlist', authMiddleware, removeWishlist);
 
-module.exports = router;
+module.exports = router;    
