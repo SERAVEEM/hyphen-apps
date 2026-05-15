@@ -14,6 +14,8 @@ const cartRoutes = require('@/routes/cart.routes');
 const orderRoutes = require('@/routes/order.routes');
 const paymentRoutes = require('@/routes/payment.routes');
 const addressRoutes = require('@/routes/address.routes');
+const shippingRoutes = require('@/routes/shipping.routes');
+
 
 
 
@@ -38,7 +40,8 @@ app.use('/api/v1/product', productRoutes);
 app.use('/api/v1/cart', cartRoutes);
 app.use('/api/v1/order', orderRoutes);
 app.use('/api/v1/payment', paymentRoutes);
-app.use('/api/v1/address', addressRoutes);
+app.use('/api/v1/address', addressRoutes)
+app.use('/api/v1/shipping', shippingRoutes);
 
 
 // Global error handler

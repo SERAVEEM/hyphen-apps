@@ -2,6 +2,7 @@ const {users} = require('@/data/users.data');
 const {products} = require('@/data/product.data');
 const {orders} = require('@/data/order.data');
 const {v4: uuidv4} = require('uuid');
+const {shippingData} = require('@/data/shipping.data');
 
 
 

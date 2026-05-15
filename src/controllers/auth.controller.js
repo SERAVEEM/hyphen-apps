@@ -46,7 +46,7 @@ const register = async(req, res) => {
         cart : [],
         orders: [],
         payments: [],
-        addresses: []
+        addresses: [],
     }; 
 
     users.push(newUser);

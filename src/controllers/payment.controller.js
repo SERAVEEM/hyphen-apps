@@ -142,7 +142,7 @@ const cancelPayment = (req, res) => {
     }
 
     if(payment.status === 'cancelled' || payment.status === 'refunded'){
-        return res.status(400).json({ message: 'Pembayaran sudah ${payment.status}' });
+        return res.status(400).json({ message: `Pembayaran sudah ${payment.status}` });
     }
 
     

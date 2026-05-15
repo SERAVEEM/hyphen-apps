@@ -1598,7 +1598,7 @@
         "tags": [
           "Cart"
         ],
-        "summary": "Ambil isi keranjang user",
+        "summary": "Lihat isi keranjang user",
         "security": [
           {
             "bearerAuth": []

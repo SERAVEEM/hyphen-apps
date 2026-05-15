@@ -8,12 +8,16 @@ const { validateSizes } = require('@/helpers/product.helpers');
 
 //========================= CREATE PRODUCT =========================
 const createProduct = (req, res) => {
-    const { name, description, price, sizes, category } = req.body;
+    const { name, description, price, sizes, category, 
+        originCityLabel, //Kota asal produk (misal "Mataram, Nusa Tenggara Barat")  
+        originCityId,
+        weight
+    } = req.body;
     const sellerID =  req.user.id;
     const isAdmin = req.user.role === 'admin';
 
     
-    if (!name || !description || !price || !sizes || !category) {
+    if (!name || !description || !price || !sizes || !category || !originCityLabel || !originCityId || !weight) {
         return res.status(400).json({
             message: 'Semua field wajib diisi'
         });
@@ -39,7 +43,9 @@ const createProduct = (req, res) => {
         sizes: sizes.map(s=> ({ 
             size: s.size.toUpperCase(), 
             stock: Number(s.stock) })),
-        
+        weight: Number(weight),
+        originCityLabel,
+        originCityId
     };
 
     products.push(newProduct);
@@ -92,30 +98,40 @@ const getProductById = (req, res) => {
 
 // ========================= UPDATE PRODUCT =========================
 const updateProduct = (req, res) => {
-    const { id, name, description, price, sizes, category } = req.body;
-    const productIndex = products.findIndex(p => p.id === id);
+    const { 
+        id, name, description, price, sizes, category,
+        originCityId,
+        originCityLabel,
+        weight
+    } = req.body;
 
+    const productIndex = products.findIndex(p => p.id === id);
     if (productIndex === -1) {
-        return res.status(404).json({
-            message: 'Product tidak ditemukan'
-        });
+        return res.status(404).json({ message: 'Product tidak ditemukan' });
     }
 
-    //UPDATE
+    // Validasi seller hanya bisa update produknya sendiri
+    if (products[productIndex].sellerID !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Anda tidak memiliki akses untuk mengubah produk ini' });
+    }
+
     products[productIndex] = {
         ...products[productIndex],
-        name: name || products[productIndex].name,
-        description: description || products[productIndex].description,
-        price: price !== undefined ? price : products[productIndex].price,
-        sizes: sizes || products[productIndex].sizes,
-        category: category || products[productIndex].category
+        ...(name && { name }),
+        ...(description && { description }),
+        ...(price !== undefined && { price }),
+        ...(sizes && { sizes }),
+        ...(category && { category }),
+        ...(weight && { weight: Number(weight) }),
+        ...(originCityId && { originCityId }),       // ← tambah
+        ...(originCityLabel && { originCityLabel }), // ← tambah
     };
 
-    res.status(200).json({
+    return res.status(200).json({
         message: 'Product berhasil diperbarui',
         data: products[productIndex]
     });
-}
+};  
 
 // ========================= DELETE PRODUCT =========================
 const deleteProduct = (req, res) => {

@@ -105,7 +105,6 @@ const addWishlist = (req, res) => {
   }
 
   user.wishlist.push(productId);
-
   res.status(200).json({ message: 'Product berhasil ditambahkan ke wishlist' });
 };
 
@@ -114,18 +113,20 @@ const addWishlist = (req, res) => {
 
 const getWishlist = (req, res) => {
     const user = users.find((u) => u.id === req.user.id);
-
     if (!user) {
         return res.status(404).json({ message: 'User tidak ditemukan' });
-    }   
-    const wishlistProducts = products.filter((p) => user.wishlist.includes(p.id));
+    }
 
-    res.status(200).json({
+    const wishlistProducts = user.wishlist.map(id => 
+        products.find(p => p.id === id)
+    ).filter(Boolean);
+
+    return res.status(200).json({
         message: 'Berhasil ambil wishlist',
+        total: wishlistProducts.length,
         data: wishlistProducts
     });
 };
-
 // ===================== HAPUS WISHLIST =========================
 const removeWishlist = (req, res) => {
     const { productId } = req.body;
@@ -144,7 +145,6 @@ const removeWishlist = (req, res) => {
     return res.status(200).json({ message: 'Product berhasil dihapus dari wishlist' });
 };
 
-// ========================== CART ===============================
 
 
 

@@ -5,43 +5,49 @@ const { validatePhone, validatePostalCode } = require('@/helpers/address.helpers
 
 // ============= ADD ALAMAT ==================
 const addAddress = (req, res) => {
-    const {label, recipientName, phone, address, city, province, postalCode, isDefault} = req.body;
+    const { 
+        label, recipientName, phone, address, postalCode, isDefault, destinationCityId, destinationCityLabel    
+    } = req.body;
+    
     const userId = req.user.id;
-    if (!label || !recipientName || !phone || !address || !city || !province || !postalCode) {
+
+    if (!label || !recipientName || !phone || !address|| !postalCode || 
+        !destinationCityId) { // ← wajib diisi
         return res.status(400).json({ message: 'Semua field harus diisi' });
     }
+
     const user = users.find((u) => u.id === userId);
-    if (!user) {
-        return res.status(404).json({ message: 'User tidak ditemukan' });
-    }
-    if(!validatePhone(phone)){
+    if (!user) return res.status(404).json({ message: 'User tidak ditemukan' });
+
+    if (!validatePhone(phone)) {
         return res.status(400).json({ message: 'Format nomor telepon tidak valid' });
     }
-    if(!validatePostalCode(postalCode)){
+    if (!validatePostalCode(postalCode)) {
         return res.status(400).json({ message: 'Kode pos harus 5 digit angka' });
     }
 
-    const shouldSetDefault = isDefault || user.addresses.length === 0; // Set default jika ini adalah alamat pertama
-    if(shouldSetDefault){
-        user.addresses.forEach(addr => addr.isDefault = false); // Set semua alamat lain menjadi non-default
+    const shouldSetDefault = isDefault || user.addresses.length === 0;
+    if (shouldSetDefault) {
+        user.addresses.forEach(addr => addr.isDefault = false);
     }
+
     const newAddress = {
         id: uuidv4(),
-        label, /*RUMAH, KOS, KANTOR,DLL*/ 
+        label,
         recipientName,
         phone,
         address,
-        city,
-        province,
         postalCode,
+        destinationCityId,
+        destinationCityLabel, // nama kota (misal "Mataram, Nusa Tenggara Barat")
         isDefault: shouldSetDefault
-    };
+    };  
+
     user.addresses.push(newAddress);
     return res.status(201).json({
         message: 'Alamat berhasil ditambahkan',
         data: newAddress
     });
-   
 };
 
 // ================== DELETE ALAMAT ==================
@@ -129,25 +135,40 @@ const setDefaultAddress = (req, res) => {
 // ============= UPDATE ALAMAT ==============
 const updateAddress = (req, res) => {
     const { addressId } = req.params;
-    const { label, recipientName, phone, address, city, province, postalCode } = req.body;
+    const { 
+        label, recipientName, phone, address, 
+        postalCode, destinationCityId, destinationCityLabel 
+    } = req.body;
+    
     const userId = req.user.id;
-
     const user = users.find((u) => u.id === userId);
-    if (!user) {
-        return res.status(404).json({ message: 'User tidak ditemukan' });
-    }
+    if (!user) return res.status(404).json({ message: 'User tidak ditemukan' });
 
     const addressIndex = user.addresses.findIndex((a) => a.id === addressId);
-    if (addressIndex === -1) {
-        return res.status(404).json({ message: 'Alamat tidak ditemukan' });
+    if (addressIndex === -1) return res.status(404).json({ message: 'Alamat tidak ditemukan' });
+
+    if (phone && !validatePhone(phone)) {
+        return res.status(400).json({ message: 'Format nomor telepon tidak valid' });
+    }
+    if (postalCode && !validatePostalCode(postalCode)) {
+        return res.status(400).json({ message: 'Kode pos harus 5 digit angka' });
     }
 
-    user.addresses[addressIndex] = { ...user.addresses[addressIndex], label, recipientName, phone, address, city, province, postalCode };
+    user.addresses[addressIndex] = {
+        ...user.addresses[addressIndex],
+        ...(label && { label }),
+        ...(recipientName && { recipientName }),
+        ...(phone && { phone }),
+        ...(address && { address }),
+        ...(postalCode && { postalCode }),
+        ...(destinationCityId && { destinationCityId }),
+        ...(destinationCityLabel && { destinationCityLabel }),
+    };
 
-    res.status(200).json({
+    return res.status(200).json({
         message: 'Alamat berhasil diperbarui',
-        data: user.addresses
+        data: user.addresses[addressIndex]
     });
 };
 
-module.exports = { addAddress, deleteAddress, getAllAddresses, setDefaultAddress, updateAddress, getAddressDetail };
+module.exports = { addAddress, deleteAddress, getAllAddresses, setDefaultAddress, updateAddress, getAddressDetail };    
