@@ -15,6 +15,7 @@ const swaggerDocument = require('../swagger.json');
 const authRoutes = require('@/routes/auth.routes');
 const userRoutes = require('@/routes/user.routes');
 const productRoutes = require('@/routes/product.routes');
+const wishlistRoutes = require('@/routes/wishlist.routes');
 const cartRoutes = require('@/routes/cart.routes');
 const orderRoutes = require('@/routes/order.routes');
 const paymentRoutes = require('@/routes/payment.routes');
@@ -111,6 +112,7 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/product', productRoutes);
+app.use('/api/v1/wishlist', wishlistRoutes);
 app.use('/api/v1/cart', cartRoutes);
 app.use('/api/v1/order', orderRoutes);
 app.use('/api/v1/payment', paymentRoutes);

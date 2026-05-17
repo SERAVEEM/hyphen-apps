@@ -1,6 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 const db = require('@/config/db');
 const { getIo } = require('@/config/socket');
+const cloudinary = require('@/config/cloudinary');
+
 
 // ================== BUAT / AMBIL ROOM CHAT ==================
 // POST /chat/room
@@ -174,4 +176,34 @@ const sendMessage = async (req, res) => {
     }
 };
 
-module.exports = { getOrCreateRoom, getMyRooms, getMessages, sendMessage };
+
+// ================== KIRIM FOTO IMAGE ==================
+const uploadChatImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'File gambar wajib diupload' });
+        }
+
+        const result = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                { folder: 'chat_images', resource_type: 'image' },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            ).end(req.file.buffer);
+        });
+
+        return res.status(200).json({
+            message: 'Gambar berhasil diupload',
+            imageUrl: result.secure_url
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Gagal upload gambar',
+            error: error.message
+        });
+    }
+};
+
+module.exports = { getOrCreateRoom, getMyRooms, getMessages, sendMessage, uploadChatImage };

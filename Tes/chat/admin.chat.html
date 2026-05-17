@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+</head>
+<body>
+  <h3>🛡️ Admin</h3>
+  <div id="log" style="border:1px solid #ccc; height:200px; overflow:auto; padding:10px"></div>
+  <input id="msg" placeholder="Balas pesan..." />
+  <input type="file" id="imgFile" accept="image/*" />
+  <button onclick="kirim()">Balas</button>
+
+  <script>
+    const socket = io('http://localhost:3000');
+    const roomId = '9125d95d-8eb2-409e-9779-0afab4b4b193';
+    const senderId = 'admin001';
+    const token = 'ISI_TOKEN_ADMIN_DISINI'; // ← ganti dengan token login
+
+    socket.on('connect', () => {
+      log('✅ Admin connected: ' + socket.id);
+      socket.emit('join_room', roomId);
+    });
+
+    socket.on('new_message', (data) => {
+      if (data.imageUrl) {
+        log('📨 ' + data.senderId + ': <img src="' + data.imageUrl + '" style="max-width:200px;max-height:200px">');
+      } else {
+        log('📨 ' + data.senderId + ': ' + data.message);
+      }
+    });
+
+    socket.on('user_typing', (data) => {
+      log('✏️ ' + data.username + ' sedang mengetik...');
+    });
+
+    socket.on('error', (data) => {
+      log('❌ Error: ' + data.message);
+    });
+
+    socket.on('connect_error', (err) => {
+      log('❌ Connect error: ' + err.message);
+    });
+
+    async function kirim() {
+      const msg = document.getElementById('msg').value;
+      const file = document.getElementById('imgFile').files[0];
+
+      if (!msg && !file) return;
+
+      if (file) {
+        log('⏳ Mengupload gambar...');
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const res = await fetch('http://localhost:3000/api/v1/chat/upload', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          log('❌ Upload gagal: ' + data.message);
+          return;
+        }
+
+        socket.emit('send_message', {
+          roomId, senderId,
+          message: null,
+          imageUrl: data.imageUrl
+        });
+
+        document.getElementById('imgFile').value = '';
+      }
+
+      if (msg) {
+        socket.emit('send_message', {
+          roomId, senderId,
+          message: msg,
+          imageUrl: null
+        });
+        document.getElementById('msg').value = '';
+      }
+    }
+
+    function log(msg) {
+      document.getElementById('log').innerHTML += `<p>${msg}</p>`;
+    }
+  </script>
+</body>
+</html>

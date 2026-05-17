@@ -66,6 +66,16 @@ ADMIN_PASSWORD = admin123
 RAJAONGKIR_BASE_URL = https://rajaongkir.komerce.id/api/v1
 RAJAONGKIR_API_KEY = LfWnG1BO6b6a53af3390df56XJQEfyfE
 
+# PAYMENT GATEWAY   
+MIDTRANS_SERVER_KEY = Mid-server-JPlgVPTZvoa1f6d_SJ5RuOTr
+MIDTRANS_IS_PRODUCTION = false
+MIDTRANS_CLIENT_KEY = Mid-client-oh8jlAg1rgA9_z3H
+
+# CHAT CLOUDINARY
+CLOUDINARY_CLOUD_NAME = dni7b0bxd
+CLOUDINARY_API_KEY = 169732436313457
+CLOUDINARY_API_SECRET = quIQhYi9eaOnm2vVwUvA4Kcr0tI
+
 
 untuk frontend :
 npm install socket.io-client (Buat fitur chat)
