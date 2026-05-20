@@ -3,7 +3,7 @@ const express = require('express');
 const router  = express.Router();
 const { getOrCreateRoom, getMyRooms, getMessages, sendMessage, uploadChatImage } = require('@/controllers/chat.controller');
 const { authMiddleware } = require('@/middleware/auth.middleware');
-const upload  = require('@/middleware/image.up.middleware');
+const {upload}  = require('@/middleware/image.up.middleware');
 
 
 router.post('/room', authMiddleware, getOrCreateRoom);

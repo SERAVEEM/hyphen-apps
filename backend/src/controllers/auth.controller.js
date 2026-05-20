@@ -1,9 +1,9 @@
 const { v4: uuidv4 } = require('uuid');
+const { validateUser, generateOTP } = require('@/helpers/auth.helpers');
+const { sendOTPEmail } = require('@/helpers/auth.helpers');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('@/config/db');
-const { validateUser, generateOTP } = require('@/helpers/auth.helpers');
-const { sendOTPEmail } = require('@/helpers/auth.helpers');
 
 const SECRET_KEY = process.env.SECRET_KEY;
 const REFRESH_SECRET_KEY = process.env.REFRESH_SECRET_KEY;
@@ -57,7 +57,7 @@ const register = async (req, res) => {
         });
     } catch (error) {
         console.error('register error:', error);
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -90,10 +90,20 @@ const verifyEmail = async (req, res) => {
         await pool.query('UPDATE users SET isVerified = 1 WHERE email = ?', [email]);
         await pool.query('DELETE FROM email_verifications WHERE email = ?', [email]);
 
-        return res.json({ message: 'Email berhasil diverifikasi' });
+        // Cek apakah user sudah punya profil
+        const [profile] = await pool.query(
+            'SELECT id FROM user_profiles WHERE userId = ?',
+            [user[0].id]
+        );
+        const hasProfile = profile.length > 0;
+
+        return res.status(200).json({
+            message: 'Email berhasil diverifikasi',
+            isNewUser: !hasProfile  // true = belum punya profil, frontend redirect ke halaman isi profil
+        });
     } catch (error) {
         console.error('verifyEmail error:', error);
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -134,7 +144,7 @@ const resendOTP = async (req, res) => {
         return res.status(200).json({ message: 'OTP berhasil dikirim ke email Anda.' });
     } catch (error) {
         console.error('resendOTP error:', error);
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -164,6 +174,13 @@ const login = async (req, res) => {
             return res.status(400).json({ message: 'Password salah' });
         }
 
+        // Cek apakah user sudah punya profil
+        const [profile] = await pool.query(
+            'SELECT id FROM user_profiles WHERE userId = ?',
+            [user.id]
+        );
+        const hasProfile = profile.length > 0;
+
         const payload = {
             id: user.id,
             username: user.username,
@@ -185,11 +202,12 @@ const login = async (req, res) => {
             message: 'Login berhasil',
             accessToken,
             refreshToken,
+            hasProfile,  // frontend bisa cek, kalau false redirect ke halaman profil
             data: { userId: user.id, username: user.username, email: user.email }
         });
     } catch (error) {
         console.error('login error:', error);
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -208,7 +226,7 @@ const logout = async (req, res) => {
         return res.status(200).json({ message: 'Logout berhasil' });
     } catch (error) {
         console.error('logout error:', error);
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -246,7 +264,7 @@ const forgotPassword = async (req, res) => {
         return res.status(200).json({ message: 'OTP berhasil dikirim ke email Anda.' });
     } catch (error) {
         console.error('forgotPassword error:', error);
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -281,7 +299,7 @@ const resetPassword = async (req, res) => {
         return res.status(200).json({ message: 'Password berhasil diubah' });
     } catch (error) {
         console.error('resetPassword error:', error);
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -330,7 +348,7 @@ const refreshAccessToken = async (req, res) => {
         });
     } catch (error) {
         console.error('refreshAccessToken error:', error);
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 

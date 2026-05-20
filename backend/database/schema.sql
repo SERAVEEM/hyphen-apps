@@ -24,6 +24,22 @@ CREATE TABLE
     );
 
 -- ============================================================
+-- 1. User profiles (relasi 1-1 ke users)
+-- ============================================================
+CREATE TABLE user_profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userId VARCHAR(36) NOT NULL UNIQUE,
+    fullname VARCHAR(100) NOT NULL,
+    phone VARCHAR(15),
+    dateOfBirth DATE,
+    location TEXT,
+    photoUrl VARCHAR(255),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- ============================================================
 -- 2. EMAIL VERIFICATIONS (OTP register)
 -- ============================================================
 CREATE TABLE

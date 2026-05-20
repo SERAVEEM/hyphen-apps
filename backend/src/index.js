@@ -14,6 +14,7 @@ const swaggerDocument = require('../swagger.json');
 const authRoutes = require('@/routes/auth.routes');
 const userRoutes = require('@/routes/user.routes');
 const productRoutes = require('@/routes/product.routes');
+const image = require('@/middleware/image.up.middleware');
 const wishlistRoutes = require('@/routes/wishlist.routes');
 const cartRoutes = require('@/routes/cart.routes');
 const orderRoutes = require('@/routes/order.routes');
@@ -113,6 +114,12 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/product', productRoutes);
+app.use('/api/v1/image', image.upload.single('file'), (req, res) => {
+  if (!req.file || !req.file.path) {
+    return res.status(400).json({ message: 'File upload failed' });
+  }
+  res.status(200).json({ message: 'File uploaded successfully', path: req.file.path });
+});
 app.use('/api/v1/wishlist', wishlistRoutes);
 app.use('/api/v1/cart', cartRoutes);
 app.use('/api/v1/order', orderRoutes);
