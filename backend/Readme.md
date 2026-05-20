@@ -100,12 +100,15 @@ Gunakan URL dari Ngrok untuk kebutuhan callback/payment gateway.
 
 ---
 
-# 📘 API Documentation (Swagger)
+# 🚀 Server Running
 
-Setelah server berjalan, buka:
+Setelah server berhasil berjalan, akan muncul informasi berikut:
 
-```bash
-http://localhost:3000/api-docs/
+```txt
+🚀 Server running successfully
+Environment : development
+Server URL  : http://localhost:3000
+Swagger Docs: http://localhost:3000/api-docs
 ```
 
 ---
