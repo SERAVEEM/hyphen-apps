@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'EditProfilePage.dart';
 
 class UserProfile extends StatelessWidget {
   final VoidCallback? onJualPressed;
@@ -14,7 +15,7 @@ class UserProfile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. User Info Card
-          _buildUserCard(),
+          _buildUserCard(context),
           const SizedBox(height: 20),
 
           // 2. Mulai Jual Bajumu Banner
@@ -64,61 +65,72 @@ class UserProfile extends StatelessWidget {
     );
   }
 
-  Widget _buildUserCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+  Widget _buildUserCard(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const EditProfilePage(),
           ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Row(
-        children: [
-          // Avatar Placeholder
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: const Color(0xFFF3F3F3),
-            child: Icon(Icons.person, size: 28, color: Colors.grey[400]),
-          ),
-          const SizedBox(width: 16),
-          // User Info (Name & Subtitle)
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'User Name Placeholder',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Lihat profil',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black38,
-                  ),
-                ),
-              ],
+        );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
             ),
-          ),
-          // Chevron Right Icon
-          const Icon(
-            Icons.chevron_right,
-            color: Colors.black26,
-            size: 24,
-          ),
-        ],
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Row(
+          children: [
+            // Avatar Image
+            const CircleAvatar(
+              radius: 28,
+              backgroundColor: Color(0xFFF3F3F3),
+              backgroundImage: AssetImage('assets/images/user_avatar.png'),
+            ),
+            const SizedBox(width: 16),
+            // User Info (Name & Subtitle)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Alex Rivera',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Lihat profil',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black38,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Chevron Right Icon
+            const Icon(
+              Icons.chevron_right,
+              color: Colors.black26,
+              size: 24,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -154,8 +166,8 @@ class UserProfile extends StatelessWidget {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    Colors.black.withOpacity(0.85),
-                    Colors.black.withOpacity(0.2),
+                    Colors.black.withValues(alpha: 0.85),
+                    Colors.black.withValues(alpha: 0.2),
                   ],
                 ),
               ),
@@ -229,7 +241,7 @@ class UserProfile extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -268,7 +280,7 @@ class UserProfile extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),

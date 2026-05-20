@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'UserProfile.dart';
+import 'SearchPage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -76,6 +77,8 @@ class _HomePageState extends State<HomePage> {
     switch (_selectedIndex) {
       case 0:
         return _buildHomeFeed(brandBrown);
+      case 1:
+        return const SearchPage();
       case 4:
         return UserProfile(
           onJualPressed: () => setState(() => _selectedIndex = 2),
@@ -176,7 +179,7 @@ class _HomePageState extends State<HomePage> {
                       Text(
                         'Hot Items',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 24,
+                          fontSize: 42,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
@@ -186,7 +189,7 @@ class _HomePageState extends State<HomePage> {
                         child: Text(
                           'See all',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
+                            fontSize: 24,
                             fontWeight: FontWeight.w400,
                             color: Colors.white70,
                           ),
