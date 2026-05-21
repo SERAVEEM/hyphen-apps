@@ -1,4 +1,5 @@
 const VALID_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+
 const validateSizes = (sizes) => {
     if (!sizes || !Array.isArray(sizes) || sizes.length === 0) {
         return 'sizes wajib diisi dan berupa array (contoh: [{"size":"S","stock":10}])';
@@ -15,6 +16,7 @@ const validateSizes = (sizes) => {
 
     return null;
 };
+
 const formatProduct = (product, sizes = []) => ({
     productId: product.id,
     sellerID: product.sellerID,
@@ -26,8 +28,13 @@ const formatProduct = (product, sizes = []) => ({
     originCityId: product.originCityId,
     originCityLabel: product.originCityLabel,
     productImage: product.imageUrl,
+    item_condition: product.item_condition,
+    defects: product.defects || null,
+    status: product.status,
+    rejectedReason: product.rejectedReason || null,
+    sizes,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
-    sizes,
 });
+
 module.exports = { validateSizes, formatProduct };

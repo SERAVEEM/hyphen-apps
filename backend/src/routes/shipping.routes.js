@@ -4,7 +4,8 @@ const router = express.Router();
 const {getProvinces, getCities, calculateShipping, getMyShipments,getAllShipments, updateShipmentStatus,} = require('@/controllers/shipping.controller');
 const { authMiddleware } = require('@/middleware/auth.middleware');
 
-router.get
+router.get('/provinces', getProvinces);
+router.get('/cities', getCities);
 router.post('/cost', calculateShipping);
 router.get('/my-shipments', authMiddleware, getMyShipments);
 router.get('/shipments', authMiddleware, getAllShipments);

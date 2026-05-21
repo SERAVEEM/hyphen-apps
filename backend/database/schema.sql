@@ -13,10 +13,10 @@ USE hypen_db;
 -- ============================================================
 CREATE TABLE
     users (
-        id VARCHAR(36) NOT NULL PRIMARY KEY, -- UUID
+        id VARCHAR(36) NOT NULL PRIMARY KEY,
         username VARCHAR(100) NOT NULL,
         email VARCHAR(150) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL, -- bcrypt hash
+        password VARCHAR(255) NOT NULL,
         role ENUM ('user', 'admin', 'seller') NOT NULL DEFAULT 'user',
         isVerified TINYINT (1) NOT NULL DEFAULT 0,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -24,36 +24,37 @@ CREATE TABLE
     );
 
 -- ============================================================
--- 1. User profiles (relasi 1-1 ke users)
+-- 2. USER PROFILES (relasi 1-1 ke users)
 -- ============================================================
-CREATE TABLE user_profiles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    userId VARCHAR(36) NOT NULL UNIQUE,
-    fullname VARCHAR(100) NOT NULL,
-    phone VARCHAR(15),
-    dateOfBirth DATE,
-    location TEXT,
-    photoUrl VARCHAR(255),
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
-);
+CREATE TABLE
+    user_profiles (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        userId VARCHAR(36) NOT NULL UNIQUE,
+        fullname VARCHAR(100) NOT NULL,
+        phone VARCHAR(15),
+        dateOfBirth DATE,
+        location TEXT,
+        photoUrl VARCHAR(255),
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
+    );
 
 -- ============================================================
--- 2. EMAIL VERIFICATIONS (OTP register)
+-- 3. EMAIL VERIFICATIONS (OTP register)
 -- ============================================================
 CREATE TABLE
     email_verifications (
         id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         email VARCHAR(150) NOT NULL,
         otp VARCHAR(10) NOT NULL,
-        otpExpiry BIGINT NOT NULL, -- Unix timestamp (ms)
+        otpExpiry BIGINT NOT NULL,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_email (email)
     );
 
 -- ============================================================
--- 3. RESET TOKENS (OTP forgot-password)
+-- 4. RESET TOKENS (OTP forgot-password)
 -- ============================================================
 CREATE TABLE
     reset_tokens (
@@ -66,7 +67,7 @@ CREATE TABLE
     );
 
 -- ============================================================
--- 4. REFRESH TOKENS
+-- 5. REFRESH TOKENS
 -- ============================================================
 CREATE TABLE
     refresh_tokens (
@@ -80,7 +81,9 @@ CREATE TABLE
     );
 
 -- ============================================================
--- 5. PRODUCTS
+-- 6. PRODUCTS
+-- FIX 1: kolom "condition" → "item_condition" (sesuai controller)
+-- FIX 2: item_condition NOT NULL tanpa default (wajib diisi seller)
 -- ============================================================
 CREATE TABLE
     products (
@@ -94,8 +97,8 @@ CREATE TABLE
         originCityId VARCHAR(20) NOT NULL,
         originCityLabel VARCHAR(200) NOT NULL,
         imageUrl VARCHAR(500) NULL,
-        status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-        condition ENUM('like_new', 'good', 'fair') NOT NULL DEFAULT 'good',
+        status ENUM ('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+        item_condition ENUM ('like_new', 'good', 'fair') NOT NULL,
         defects TEXT NULL,
         rejectedReason TEXT NULL,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -107,27 +110,28 @@ CREATE TABLE
     );
 
 -- ============================================================
--- 6. PRODUCT SIZES (relasi 1-N ke products)
+-- 7. PRODUCT SIZES (relasi 1-N ke products)
+-- FIX 3: stock DEFAULT 1 (barang bekas, stok max 1 per size)
 -- ============================================================
 CREATE TABLE
     product_sizes (
         id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         productId VARCHAR(36) NOT NULL,
-        size VARCHAR(10) NOT NULL, -- S, M, L, XL, dst.
-        stock INT NOT NULL DEFAULT 0,
+        size VARCHAR(10) NOT NULL,
+        stock TINYINT (1) NOT NULL DEFAULT 1, -- 1 = tersedia, 0 = habis
         FOREIGN KEY (productId) REFERENCES products (id) ON DELETE CASCADE,
         UNIQUE KEY uq_product_size (productId, size),
         INDEX idx_productId (productId)
     );
 
 -- ============================================================
--- 7. ADDRESSES
+-- 8. ADDRESSES
 -- ============================================================
 CREATE TABLE
     addresses (
-        id VARCHAR(36) NOT NULL PRIMARY KEY, -- UUID
+        id VARCHAR(36) NOT NULL PRIMARY KEY,
         userId VARCHAR(36) NOT NULL,
-        label VARCHAR(100) NOT NULL, -- misal "Rumah", "Kantor"
+        label VARCHAR(100) NOT NULL,
         recipientName VARCHAR(150) NOT NULL,
         phone VARCHAR(20) NOT NULL,
         address TEXT NOT NULL,
@@ -142,17 +146,18 @@ CREATE TABLE
     );
 
 -- ============================================================
--- 8. CART ITEMS
+-- 9. CART ITEMS
+-- FIX 4: quantity TINYINT(1) DEFAULT 1 — barang bekas max 1 per item
+-- FIX 5: hapus kolom productName (redundant, bisa JOIN ke products)
 -- ============================================================
 CREATE TABLE
     cart_items (
         id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         userId VARCHAR(36) NOT NULL,
         productId VARCHAR(36) NOT NULL,
-        productName VARCHAR(200) NOT NULL,
         size VARCHAR(10) NOT NULL,
         price DECIMAL(15, 2) NOT NULL,
-        quantity INT NOT NULL DEFAULT 1,
+        quantity TINYINT (1) NOT NULL DEFAULT 1,
         totalPrice DECIMAL(15, 2) NOT NULL,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -163,7 +168,7 @@ CREATE TABLE
     );
 
 -- ============================================================
--- 9. WISHLIST
+-- 10. WISHLIST
 -- ============================================================
 CREATE TABLE
     wishlist (
@@ -178,16 +183,20 @@ CREATE TABLE
     );
 
 -- ============================================================
--- 10. ORDERS
+-- 11. ORDERS
+-- FIX 6: kolom "userId" → "buyerID" (sesuai controller & logika buyer/seller)
+-- FIX 7: kolom "price" (harga satuan) — controller insert price bukan totalPrice
+-- FIX 8: quantity dihapus — barang bekas selalu 1, tidak perlu kolom ini
+-- FIX 9: tambah addressId — order perlu tahu alamat pengiriman
 -- ============================================================
 CREATE TABLE
     orders (
-        id VARCHAR(36) NOT NULL PRIMARY KEY, -- UUID
-        userId VARCHAR(36) NOT NULL,
+        id VARCHAR(36) NOT NULL PRIMARY KEY,
+        buyerID VARCHAR(36) NOT NULL,
         productId VARCHAR(36) NOT NULL,
-        quantity INT NOT NULL,
         size VARCHAR(10) NOT NULL,
-        totalPrice DECIMAL(15, 2) NOT NULL,
+        price DECIMAL(15, 2) NOT NULL,
+        addressId VARCHAR(36) NULL, -- nullable: buyer isi alamat setelah order
         status ENUM (
             'pending',
             'waiting_payment',
@@ -200,23 +209,26 @@ CREATE TABLE
         ) NOT NULL DEFAULT 'pending',
         orderDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE,
+        FOREIGN KEY (buyerID) REFERENCES users (id) ON DELETE CASCADE,
         FOREIGN KEY (productId) REFERENCES products (id) ON DELETE RESTRICT,
-        INDEX idx_userId (userId),
-        INDEX idx_status (status)
+        FOREIGN KEY (addressId) REFERENCES addresses (id) ON DELETE SET NULL,
+        INDEX idx_buyerID (buyerID),
+        INDEX idx_status (status),
+        INDEX idx_productId (productId)
     );
 
 -- ============================================================
--- 11. SHIPMENTS
+-- 12. SHIPMENTS
+-- FIX 10: userId → buyerID (konsisten dengan orders)
 -- ============================================================
 CREATE TABLE
     shipments (
-        id VARCHAR(36) NOT NULL PRIMARY KEY, -- UUID
+        id VARCHAR(36) NOT NULL PRIMARY KEY,
         orderId VARCHAR(36) NOT NULL UNIQUE,
-        userId VARCHAR(36) NOT NULL,
+        buyerID VARCHAR(36) NOT NULL,
         addressId VARCHAR(36) NOT NULL,
-        courierCode VARCHAR(50) NOT NULL, -- jne, sicepat, dll.
-        service VARCHAR(50) NOT NULL, -- REG, YES, OKE, dll.
+        courierCode VARCHAR(50) NOT NULL,
+        service VARCHAR(50) NOT NULL,
         courierName VARCHAR(100) NULL,
         estimatedDays VARCHAR(50) NULL,
         shippingCost DECIMAL(15, 2) NOT NULL DEFAULT 0,
@@ -232,22 +244,23 @@ CREATE TABLE
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (orderId) REFERENCES orders (id) ON DELETE CASCADE,
-        FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE,
+        FOREIGN KEY (buyerID) REFERENCES users (id) ON DELETE CASCADE,
         FOREIGN KEY (addressId) REFERENCES addresses (id) ON DELETE RESTRICT,
         INDEX idx_orderId (orderId),
-        INDEX idx_userId (userId)
+        INDEX idx_buyerID (buyerID)
     );
 
 -- ============================================================
--- 12. PAYMENTS
+-- 13. PAYMENTS
+-- FIX 11: userId → buyerID (konsisten)
 -- ============================================================
 CREATE TABLE
     payments (
-        id VARCHAR(36) NOT NULL PRIMARY KEY, -- UUID
+        id VARCHAR(36) NOT NULL PRIMARY KEY,
         orderId VARCHAR(36) NOT NULL,
-        userId VARCHAR(36) NOT NULL,
+        buyerID VARCHAR(36) NOT NULL,
         amount DECIMAL(15, 2) NOT NULL,
-        paymentMethod VARCHAR(50) NOT NULL, -- transfer, cod, dll.
+        paymentMethod VARCHAR(50) NOT NULL,
         status ENUM (
             'pending',
             'paid',
@@ -255,25 +268,25 @@ CREATE TABLE
             'cancelled',
             'expired'
         ) NOT NULL DEFAULT 'pending',
-        midtransOrderId VARCHAR(100) NULL UNIQUE, -- PAY-{orderId}-{timestamp}
+        midtransOrderId VARCHAR(100) NULL UNIQUE,
         snapToken TEXT NULL,
         snapUrl TEXT NULL,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         expiredAt DATETIME NULL,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (orderId) REFERENCES orders (id) ON DELETE CASCADE,
-        FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE,
+        FOREIGN KEY (buyerID) REFERENCES users (id) ON DELETE CASCADE,
         INDEX idx_orderId (orderId),
-        INDEX idx_userId (userId),
+        INDEX idx_buyerID (buyerID),
         INDEX idx_status (status)
     );
 
 -- ============================================================
--- 13. CHAT ROOMS
+-- 14. CHAT ROOMS
 -- ============================================================
 CREATE TABLE
     chat_rooms (
-        id VARCHAR(36) NOT NULL PRIMARY KEY, -- UUID
+        id VARCHAR(36) NOT NULL PRIMARY KEY,
         buyerId VARCHAR(36) NOT NULL,
         sellerId VARCHAR(36) NOT NULL,
         productId VARCHAR(36) NOT NULL,
@@ -287,11 +300,11 @@ CREATE TABLE
     );
 
 -- ============================================================
--- 14. CHAT MESSAGES
+-- 15. CHAT MESSAGES
 -- ============================================================
 CREATE TABLE
     chat_messages (
-        id VARCHAR(36) NOT NULL PRIMARY KEY, -- UUID
+        id VARCHAR(36) NOT NULL PRIMARY KEY,
         roomId VARCHAR(36) NOT NULL,
         senderId VARCHAR(36) NOT NULL,
         message TEXT NULL,
@@ -304,4 +317,21 @@ CREATE TABLE
         INDEX idx_roomId (roomId),
         INDEX idx_senderId (senderId),
         INDEX idx_isRead (isRead)
+    );
+
+-- ============================================================
+-- SEED: DEFAULT ADMIN
+-- password: Admin@123 (bcrypt, cost 10)
+-- Ganti password setelah pertama login!
+-- ============================================================
+INSERT INTO
+    users (id, username, email, password, role, isVerified)
+VALUES
+    (
+        UUID (),
+        'admin123',
+        'admin123@gmail.com',
+        '$2b$10$ES5ZneS9ScXuIMv.UTCV2uqggEfkQJhrhprZHn63dXXmwvQRQYSym',
+        'admin',
+        1
     );

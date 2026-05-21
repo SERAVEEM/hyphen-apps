@@ -1,59 +1,62 @@
 const { v4: uuidv4 } = require('uuid');
 const pool = require('@/config/db');
-
 const { getOrderDetail } = require('@/helpers/order.helpers');
+
 // ================== CREATE ORDER =====================
 // POST /order/create-order
-// Body: { productId, quantity, size }
+// Body: { productId }
 const createOrder = async (req, res) => {
     try {
-        const userId = req.user.id;
-        const { productId, quantity, size } = req.body;
+        // FIX 1: productId dari body, bukan params
+        const { productId } = req.body;
+        const buyerID = req.user.id;
 
-        if (!productId || !quantity || !size) {
-            return res.status(400).json({ message: 'productId, quantity, dan size wajib diisi' });
-        }
-        if (quantity <= 0) {
-            return res.status(400).json({ message: 'Quantity harus lebih dari 0' });
+        if (!productId) {
+            return res.status(400).json({ message: 'productId wajib diisi' });
         }
 
-        const [product] = await pool.query('SELECT * FROM products WHERE id = ?', [productId]);
+        const [product] = await pool.query(
+            'SELECT * FROM products WHERE id = ? AND status = "approved"',
+            [productId]
+        );
         if (product.length === 0) {
-            return res.status(404).json({ message: 'Product tidak tersedia' });
+            return res.status(404).json({ message: 'Product tidak ditemukan' });
         }
 
-        const [selectedSize] = await pool.query(
-            'SELECT * FROM product_sizes WHERE productId = ? AND size = ?',
-            [productId, size.toUpperCase()]
+        if (product[0].sellerID === buyerID) {
+            return res.status(403).json({ message: 'Tidak bisa membeli produk sendiri' });
+        }
+
+        const [sizeRow] = await pool.query(
+            'SELECT * FROM product_sizes WHERE productId = ? AND stock > 0 LIMIT 1',
+            [productId]
         );
-        if (selectedSize.length === 0) {
-            return res.status(400).json({ message: `Ukuran ${size.toUpperCase()} tidak tersedia` });
-        }
-        if (quantity > selectedSize[0].stock) {
-            return res.status(400).json({
-                message: 'Stok tidak cukup',
-                stockTersedia: selectedSize[0].stock
-            });
+        if (sizeRow.length === 0) {
+            return res.status(400).json({ message: 'Stok produk sudah habis' });
         }
 
-        const id = uuidv4();
-        const totalPrice = product[0].price * quantity;
+        const size = sizeRow[0].size;
 
         await pool.query(
-            'INSERT INTO orders (id, userId, productId, quantity, size, totalPrice, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [id, userId, productId, quantity, size.toUpperCase(), totalPrice, 'pending']
+            'UPDATE product_sizes SET stock = 0 WHERE productId = ? AND size = ?',
+            [productId, size]
         );
 
+        const orderId = uuidv4();
         await pool.query(
-            'UPDATE product_sizes SET stock = stock - ? WHERE productId = ? AND size = ?',
-            [quantity, productId, size.toUpperCase()]
+            'INSERT INTO orders (id, buyerID, productId, size, price, status) VALUES (?, ?, ?, ?, ?, "pending")',
+            [orderId, buyerID, productId, size, product[0].price]
         );
-
-        const detail = await getOrderDetail(id);
 
         return res.status(201).json({
             message: 'Order berhasil dibuat',
-            data: detail
+            data: {
+                orderId,
+                productId,
+                productName: product[0].name,
+                size,
+                price: product[0].price
+            }
         });
     } catch (error) {
         console.error('createOrder error:', error);
@@ -65,9 +68,10 @@ const createOrder = async (req, res) => {
 // POST /order/create/from-cart
 const createOrderFromCart = async (req, res) => {
     try {
-        const userId = req.user.id;
+        // FIX 2: konsisten pakai buyerID
+        const buyerID = req.user.id;
 
-        const [cart] = await pool.query('SELECT * FROM cart_items WHERE userId = ?', [userId]);
+        const [cart] = await pool.query('SELECT * FROM cart_items WHERE userId = ?', [buyerID]);
         if (cart.length === 0) {
             return res.status(400).json({ message: 'Cart kosong' });
         }
@@ -76,43 +80,44 @@ const createOrderFromCart = async (req, res) => {
         const errors = [];
 
         for (const item of cart) {
-            const [product] = await pool.query('SELECT * FROM products WHERE id = ?', [item.productId]);
+            const [product] = await pool.query(
+                'SELECT * FROM products WHERE id = ? AND status = "approved"',
+                [item.productId]
+            );
             if (product.length === 0) {
-                errors.push(`Produk ${item.productName} tidak ditemukan`);
+                errors.push(`Produk tidak ditemukan`);
                 continue;
             }
 
+            // FIX 3: barang bekas — cek stok > 0, tidak perlu cek quantity
             const [selectedSize] = await pool.query(
-                'SELECT * FROM product_sizes WHERE productId = ? AND size = ?',
+                'SELECT * FROM product_sizes WHERE productId = ? AND size = ? AND stock > 0',
                 [item.productId, item.size.toUpperCase()]
             );
             if (selectedSize.length === 0) {
-                errors.push(`Ukuran ${item.size} tidak tersedia untuk produk ${product[0].name}`);
-                continue;
-            }
-            if (selectedSize[0].stock < item.quantity) {
-                errors.push(`Stok ${product[0].name} ukuran ${item.size} tidak cukup (tersedia: ${selectedSize[0].stock})`);
+                errors.push(`Stok ${product[0].name} ukuran ${item.size} sudah habis`);
                 continue;
             }
 
-            const id = uuidv4();
-            const totalPrice = product[0].price * item.quantity;
+            const orderId = uuidv4();
 
+            // FIX 4: kolom sesuai schema (buyerID, price) — hapus quantity & totalPrice
             await pool.query(
-                'INSERT INTO orders (id, userId, productId, quantity, size, totalPrice, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [id, userId, item.productId, item.quantity, item.size.toUpperCase(), totalPrice, 'pending']
+                'INSERT INTO orders (id, buyerID, productId, size, price, status) VALUES (?, ?, ?, ?, ?, "pending")',
+                [orderId, buyerID, item.productId, item.size.toUpperCase(), product[0].price, 'pending']
             );
 
+            // FIX 5: stok jadi 0, bukan stock - quantity
             await pool.query(
-                'UPDATE product_sizes SET stock = stock - ? WHERE productId = ? AND size = ?',
-                [item.quantity, item.productId, item.size.toUpperCase()]
+                'UPDATE product_sizes SET stock = 0 WHERE productId = ? AND size = ?',
+                [item.productId, item.size.toUpperCase()]
             );
 
-            const detail = await getOrderDetail(id);
+            const detail = await getOrderDetail(orderId);
             newOrders.push(detail);
         }
 
-        await pool.query('DELETE FROM cart_items WHERE userId = ?', [userId]);
+        await pool.query('DELETE FROM cart_items WHERE userId = ?', [buyerID]);
 
         return res.status(201).json({
             message: `${newOrders.length} order berhasil dibuat${errors.length > 0 ? `, ${errors.length} gagal` : ''}`,
@@ -151,11 +156,12 @@ const getOrderById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const [order] = await pool.query('SELECT userId FROM orders WHERE id = ?', [id]);
+        // FIX 6: kolom buyerID, bukan userId
+        const [order] = await pool.query('SELECT buyerID FROM orders WHERE id = ?', [id]);
         if (order.length === 0) {
             return res.status(404).json({ message: 'Order tidak ditemukan' });
         }
-        if (order[0].userId !== req.user.id && req.user.role !== 'admin') {
+        if (order[0].buyerID !== req.user.id && req.user.role !== 'admin') {
             return res.status(403).json({ message: 'Akses tidak diizinkan' });
         }
 
@@ -175,11 +181,12 @@ const getOrderById = async (req, res) => {
 // GET /order/my-orders
 const getMyOrders = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const buyerID = req.user.id;
 
+        // FIX 7: kolom buyerID, bukan userId
         const [orders] = await pool.query(
-            'SELECT id FROM orders WHERE userId = ? ORDER BY orderDate DESC',
-            [userId]
+            'SELECT id FROM orders WHERE buyerID = ? ORDER BY orderDate DESC',
+            [buyerID]
         );
 
         if (orders.length === 0) {
@@ -204,13 +211,14 @@ const getMyOrders = async (req, res) => {
 const cancelOrder = async (req, res) => {
     try {
         const { orderId } = req.params;
-        const userId = req.user.id;
+        const buyerID = req.user.id;
 
+        // FIX 8: kolom buyerID, bukan userId
         const [order] = await pool.query('SELECT * FROM orders WHERE id = ?', [orderId]);
         if (order.length === 0) {
             return res.status(404).json({ message: 'Order tidak ditemukan' });
         }
-        if (order[0].userId !== userId) {
+        if (order[0].buyerID !== buyerID) {
             return res.status(403).json({ message: 'Akses tidak diizinkan' });
         }
         if (order[0].status !== 'pending') {
@@ -221,12 +229,13 @@ const cancelOrder = async (req, res) => {
             });
         }
 
+        // FIX 9: kembalikan stok jadi 1 (bukan stock + quantity)
         await pool.query(
-            'UPDATE product_sizes SET stock = stock + ? WHERE productId = ? AND size = ?',
-            [order[0].quantity, order[0].productId, order[0].size]
+            'UPDATE product_sizes SET stock = 1 WHERE productId = ? AND size = ?',
+            [order[0].productId, order[0].size]
         );
 
-        await pool.query('UPDATE orders SET status = ? WHERE id = ?', ['cancelled', orderId]);
+        await pool.query('UPDATE orders SET status = "cancelled" WHERE id = ?', [orderId]);
 
         const detail = await getOrderDetail(orderId);
 
