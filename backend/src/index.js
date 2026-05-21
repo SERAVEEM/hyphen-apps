@@ -51,26 +51,32 @@ io.on('connection', (socket) => {
   socket.on('send_message', async (data) => {
     const { roomId, senderId, message, imageUrl } = data;
     try {
-      const id = uuidv4();
-      const type = imageUrl ? 'image' : 'text';
+        const id = uuidv4();
+        const type = imageUrl ? 'image' : 'text';
 
-      await db.query(
-        'INSERT INTO chat_messages (id, roomId, senderId, message, imageUrl, type) VALUES (?, ?, ?, ?, ?, ?)',
-        [id, roomId, senderId, message ?? null, imageUrl ?? null, type]
-      );
+        // Ambil username dari DB
+        const [userRows] = await db.query('SELECT username FROM users WHERE id = ?', [senderId]);
+        const senderName = userRows.length > 0 ? userRows[0].username : senderId;
 
-      const newMessage = {
-        id, roomId, senderId, message, imageUrl, type,
-        isRead: false,
-        createdAt: new Date().toISOString()
-      };
+        await db.query(
+            'INSERT INTO chat_messages (id, roomId, senderId, message, imageUrl, type) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, roomId, senderId, message ?? null, imageUrl ?? null, type]
+        );
 
-      io.to(roomId).emit('new_message', newMessage);
+        const newMessage = {
+            id, roomId, senderId,
+            senderName,  // tambah ini
+            message, imageUrl, type,
+            isRead: false,
+            createdAt: new Date().toISOString()
+        };
+
+        io.to(roomId).emit('new_message', newMessage);
     } catch (error) {
-      console.error('send_message error:', error);
-      socket.emit('error', { message: 'Gagal mengirim pesan' });
+        console.error('send_message error:', error);
+        socket.emit('error', { message: 'Gagal mengirim pesan' });
     }
-  });
+});
 
   socket.on('typing', (data) => {
     socket.to(data.roomId).emit('user_typing', {

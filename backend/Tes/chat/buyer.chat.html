@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 </head>
 <body>
   <h3>👤 Buyer</h3>
@@ -12,10 +12,9 @@
 
   <script>
     const socket = io('http://localhost:3000');
-    const roomId = '0e5e2390-150a-4c02-9271-3c616c5445b2';
-    const senderId = 'user4452';
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzZXI0NDUyIiwidXNlcm5hbWUiOiJ1c2VyY2NvdW50MTIzIiwiZW1haWwiOiJ1c2VyMTI0QGdtYWlsLmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDMzMjg5LCJleHAiOjE3NzkwMzQxODl9.Lwc0Axz05aCILZDKIszXyd9rjMDLzBkk28iTo0pnL_g'; // ← ganti dengan token login
-
+    const roomId = 'a191a299-cf4d-4160-9030-8f5cb167a1dc';
+    const senderId = '1bf53afe-b917-45ba-bd54-31808fb076fc';
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjFiZjUzYWZlLWI5MTctNDViYS1iZDU0LTMxODA4ZmIwNzZmYyIsInVzZXJuYW1lIjoiSk9FTCBBQk5FUiBTIiwiZW1haWwiOiJqb2VsYWJuZXIxOTlAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzkzODMzOTksImV4cCI6MTc3OTM4NDI5OX0.W1erKSpAmNTggw2EmI0Zk3qQPULFzH44xVr97P8n02E';
     socket.on('connect', () => {
       log('✅ Buyer connected: ' + socket.id);
       socket.emit('join_room', roomId);
@@ -23,11 +22,11 @@
       log('🖼️ Test image: <img src="https://via.placeholder.com/100" style="max-width:100px">');
     });
 
-    socket.on('new_message', (data) => {
+   socket.on('new_message', (data) => {
     if (data.imageUrl) {
-        log('📨 ' + data.senderId + ': <img src="' + data.imageUrl + '" style="max-width:200px;max-height:200px;display:block">');
+        log('📨 ' + data.senderName + ': <img src="' + data.imageUrl + '" style="max-width:200px;max-height:200px;display:block">');
     } else {
-        log('📨 ' + data.senderId + ': ' + data.message);
+        log('📨 ' + data.senderName + ': ' + data.message);
     }
 });
 

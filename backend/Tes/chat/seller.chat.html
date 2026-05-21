@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 </head>
 <body>
   <h3>🛡️ Admin</h3>
@@ -12,9 +12,9 @@
 
   <script>
     const socket = io('http://localhost:3000');
-    const roomId = '0e5e2390-150a-4c02-9271-3c616c5445b2';
-    const senderId = 'admin001';
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFkbWluMDAxIiwidXNlcm5hbWUiOiJhZG1pbjEyMyIsImVtYWlsIjoiYWRtaW4xMjNAZ21haWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc5MDMzMjkxLCJleHAiOjE3NzkwMzQxOTF9.XDVhtyTXMO_0KqBMLCduPSuZ_UGzN17jS8tr7NXH6mM';
+    const roomId = 'a191a299-cf4d-4160-9030-8f5cb167a1dc';
+    const senderId = '3c7bdbc7-8f55-41e4-a6e0-69c18625225d';
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNjN2JkYmM3LThmNTUtNDFlNC1hNmUwLTY5YzE4NjI1MjI1ZCIsInVzZXJuYW1lIjoiZmluZXN0am9lMjEiLCJlbWFpbCI6ImZpbmVqb2U5OTlAZ21haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzkzODMyNTcsImV4cCI6MTc3OTM4NDE1N30.43ZXbqshdZsDey4b3KfrDWeYnb8vuTFoOoJZpmiX-2E';
     socket.on('connect', () => {
       log('✅ Admin connected: ' + socket.id);
       socket.emit('join_room', roomId);
@@ -24,9 +24,9 @@
 
     socket.on('new_message', (data) => {
     if (data.imageUrl) {
-        log('📨 ' + data.senderId + ': <img src="' + data.imageUrl + '" style="max-width:200px;max-height:200px;display:block">');
+        log('📨 ' + data.senderName + ': <img src="' + data.imageUrl + '" style="max-width:200px;max-height:200px;display:block">');
     } else {
-        log('📨 ' + data.senderId + ': ' + data.message);
+        log('📨 ' + data.senderName + ': ' + data.message);
     }
 });
 
