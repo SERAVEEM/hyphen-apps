@@ -16,9 +16,11 @@ CREATE TABLE
         id VARCHAR(36) NOT NULL PRIMARY KEY,
         username VARCHAR(100) NOT NULL,
         email VARCHAR(150) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NULL,  -- NULL karena Google login tidak punya password
         role ENUM ('user', 'admin', 'seller') NOT NULL DEFAULT 'user',
         isVerified TINYINT (1) NOT NULL DEFAULT 0,
+        googleId VARCHAR(255) NULL,
+        authProvider ENUM ('local', 'google') NOT NULL DEFAULT 'local',
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     );

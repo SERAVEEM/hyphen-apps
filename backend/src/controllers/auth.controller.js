@@ -4,6 +4,8 @@ const { sendOTPEmail } = require('@/helpers/auth.helpers');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('@/config/db');
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const SECRET_KEY = process.env.SECRET_KEY;
 const REFRESH_SECRET_KEY = process.env.REFRESH_SECRET_KEY;
@@ -343,4 +345,65 @@ const refreshAccessToken = async (req, res) => {
     }
 };
 
-module.exports = { register, verifyEmail, resendOTP, login, forgotPassword, resetPassword, refreshAccessToken, logout };
+//========================= google sign in =======================
+
+const googleSignIn = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json({ message: 'idToken wajib diisi' });
+        }
+
+        // 1. Verifikasi idToken ke Google
+        const ticket = await client.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const { email, name, sub: googleId } = ticket.getPayload();
+
+        // 2. Cek user di DB
+        let [user] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+
+        if (user.length === 0) {
+            // Auto register
+            const id = uuidv4();
+            await pool.query(
+                'INSERT INTO users (id, username, email, password, role, isVerified, googleId, authProvider) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [id, name, email, null, 'user', 1, googleId, 'google']
+            );
+            user = [{ id, username: name, email, role: 'user' }];
+        }
+
+        // 3. Generate token
+        const accessToken = jwt.sign(
+            { id: user[0].id, username: user[0].username, email: user[0].email, role: user[0].role },
+            SECRET_KEY,
+            { expiresIn: '15m' }
+        );
+        const refreshToken = jwt.sign({ id: user[0].id }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
+
+        await pool.query('DELETE FROM refresh_tokens WHERE userId = ?', [user[0].id]);
+        await pool.query(
+            'INSERT INTO refresh_tokens (userId, token, expiry) VALUES (?, ?, ?)',
+            [user[0].id, refreshToken, Date.now() + 7 * 24 * 60 * 60 * 1000]
+        );
+
+        // 4. Cek profil
+        const [profile] = await pool.query('SELECT id FROM user_profiles WHERE userId = ?', [user[0].id]);
+        const hasProfile = profile.length > 0;
+
+        return res.status(200).json({
+            message: 'Login dengan Google berhasil',
+            accessToken,
+            refreshToken,
+            hasProfile,
+            data: { userId: user[0].id, username: user[0].username, email: user[0].email }
+        });
+    } catch (error) {
+        console.error('googleSignIn error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+module.exports = { register, verifyEmail, resendOTP, login, forgotPassword, resetPassword, refreshAccessToken, googleSignIn, logout };

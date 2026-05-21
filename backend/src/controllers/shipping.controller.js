@@ -1,6 +1,8 @@
 const pool = require('@/config/db');
 const { rajaongkirGet, rajaongkirPost } = require('@/helpers/shipping.helpers');
 
+const SUPPORTED_COURIERS = ['jne', 'jnt', 'sicepat', 'anteraja', 'pos'];
+
 // ========================= CARI KOTA =========================
 // GET /shipping/cities?search=<nama>
 const getCities = async (req, res) => {
@@ -33,6 +35,13 @@ const calculateShipping = async (req, res) => {
         }
         if (isNaN(weightGram) || Number(weightGram) < 1) {
             return res.status(400).json({ message: 'weightGram harus berupa angka positif (dalam gram)' });
+        }
+
+        if (courier && !SUPPORTED_COURIERS.includes(courier.toLowerCase())) {
+            return res.status(400).json({
+                message: 'Kurir tidak didukung',
+                supported: SUPPORTED_COURIERS
+            });
         }
 
         const courierParam = courier ? courier.toLowerCase() : SUPPORTED_COURIERS.join(':');

@@ -689,6 +689,78 @@
         }
       }
     },
+    "/auth/google-signin": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login dengan akun Google",
+        "description": "Kirim ID token dari Google Sign-In, jika email belum terdaftar maka akan otomatis register dan buat profil baru.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "idToken"
+                ],
+                "properties": {
+                  "idToken": {
+                    "type": "string",
+                    "description": "ID token yang didapat dari Google Sign-In di frontend"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "refreshToken": {
+                      "type": "string"
+                    },
+                    "isNewUser": {
+                      "type": "boolean",
+                      "description": "true = baru pertama kali login dengan Google, redirect ke halaman isi profil"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ID token tidak valid"
+          }
+        }
+      }
+    },
     "/auth/forgot-password": {
       "post": {
         "tags": [
@@ -1185,23 +1257,12 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "productId",
-                  "size",
-                  "quantity"
+                  "productId"
                 ],
                 "properties": {
                   "productId": {
                     "type": "string",
                     "format": "uuid"
-                  },
-                  "size": {
-                    "type": "string",
-                    "example": "M"
-                  },
-                  "quantity": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "example": 1
                   }
                 }
               }
@@ -1211,12 +1272,6 @@
         "responses": {
           "201": {
             "description": "Produk berhasil ditambahkan ke keranjang"
-          },
-          "400": {
-            "description": "Stok tidak cukup"
-          },
-          "404": {
-            "description": "Produk tidak ditemukan"
           }
         }
       }
