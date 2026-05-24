@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'EditProfilePage.dart';
 import 'OrderHistoryPage.dart';
 import 'SellerProductsPage.dart';
+import 'auth_manager.dart';
+import 'login.dart';
 
 class UserProfile extends StatelessWidget {
   final VoidCallback? onJualPressed;
@@ -10,84 +12,91 @@ class UserProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 1. User Info Card
-          _buildUserCard(context),
-          const SizedBox(height: 20),
+    const Color brandBrown = Color(0xFF8C7355);
 
-          // 2. Mulai Jual Bajumu Banner
-          _buildJualBanner(context),
-          const SizedBox(height: 20),
+    return ListenableBuilder(
+      listenable: AuthManager(),
+      builder: (context, child) {
+        final auth = AuthManager();
+        if (!auth.isLoggedIn) {
+          return _buildLoggedOutPlaceholder(context, brandBrown);
+        }
 
-          // 3. Order History List Item
-          _buildMenuItem(
-            icon: Icons.receipt_long_outlined,
-            title: 'Order History',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const OrderHistoryPage(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildUserCard(context, auth.userName),
+              const SizedBox(height: 20),
 
-          // Seller Dashboard List Item
-          _buildMenuItem(
-            icon: Icons.storefront_outlined,
-            title: 'Seller Dashboard',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SellerProductsPage(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
+              _buildJualBanner(context),
+              const SizedBox(height: 20),
 
-          // 4. Share List Item
-          _buildMenuItem(
-            icon: Icons.share_outlined,
-            title: 'Share',
-            onTap: () {
-              // TODO: Integrate share action
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // 5. Help & Support grouped card
-          _buildGroupedMenu(
-            items: [
-              _GroupedItemData(
-                icon: Icons.help_outline,
-                title: 'Help',
-                onTap: () {},
+              _buildMenuItem(
+                icon: Icons.receipt_long_outlined,
+                title: 'Order History',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const OrderHistoryPage(),
+                    ),
+                  );
+                },
               ),
-              _GroupedItemData(
-                icon: Icons.headset_mic_outlined,
-                title: 'Support',
-                onTap: () {},
+              const SizedBox(height: 16),
+
+              _buildMenuItem(
+                icon: Icons.storefront_outlined,
+                title: 'Seller Dashboard',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SellerProductsPage(),
+                    ),
+                  );
+                },
               ),
+              const SizedBox(height: 16),
+
+              _buildMenuItem(
+                icon: Icons.share_outlined,
+                title: 'Share',
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Share link copied!')),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+
+              _buildGroupedMenu(
+                items: [
+                  _GroupedItemData(
+                    icon: Icons.help_outline,
+                    title: 'Help',
+                    onTap: () {},
+                  ),
+                  _GroupedItemData(
+                    icon: Icons.headset_mic_outlined,
+                    title: 'Support',
+                    onTap: () {},
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 120),
             ],
           ),
-          
-          // Extra bottom padding to avoid bottom navigation bar overlap
-          const SizedBox(height: 120),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildUserCard(BuildContext context) {
+  Widget _buildUserCard(BuildContext context, String userName) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -113,20 +122,18 @@ class UserProfile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Row(
           children: [
-            // Avatar Image
             const CircleAvatar(
               radius: 28,
               backgroundColor: Color(0xFFF3F3F3),
               backgroundImage: AssetImage('assets/images/user_avatar.png'),
             ),
             const SizedBox(width: 16),
-            // User Info (Name & Subtitle)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Alex Rivera',
+                    userName,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -145,11 +152,82 @@ class UserProfile extends StatelessWidget {
                 ],
               ),
             ),
-            // Chevron Right Icon
             const Icon(
               Icons.chevron_right,
               color: Colors.black26,
               size: 24,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoggedOutPlaceholder(BuildContext context, Color brandBrown) {
+    return Center(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF6F6F6),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.account_circle_outlined,
+                color: brandBrown,
+                size: 80,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              'Sign In Required',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.black,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Log in or register to view your profile details, check order history, and access the seller dashboard.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.black54,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: brandBrown,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Sign In / Register',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ],
         ),
@@ -166,7 +244,6 @@ class UserProfile extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Background Image
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
@@ -179,7 +256,6 @@ class UserProfile extends StatelessWidget {
               ),
             ),
           ),
-          // Gradient Overlay to ensure text readability
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -195,7 +271,6 @@ class UserProfile extends StatelessWidget {
               ),
             ),
           ),
-          // Text Content
           Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -221,7 +296,6 @@ class UserProfile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                // "Jual" Button
                 ElevatedButton(
                   onPressed: onJualPressed,
                   style: ElevatedButton.styleFrom(
