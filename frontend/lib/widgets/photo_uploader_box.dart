@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:io';
 
 class PhotoUploaderBox extends StatelessWidget {
   final String? selectedImagePath;
@@ -33,8 +34,8 @@ class PhotoUploaderBox extends StatelessWidget {
           child: selectedImagePath != null
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(24),
-                  child: Image.asset(
-                    selectedImagePath!,
+                  child: Image.file(
+                    File(selectedImagePath!),
                     fit: BoxFit.cover,
                   ),
                 )

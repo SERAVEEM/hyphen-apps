@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hyphen/managers/product_manager.dart';
 import 'package:hyphen/managers/order_manager.dart';
+import 'package:hyphen/managers/admin_manager.dart';
+import 'package:hyphen/managers/auth_manager.dart';
 import 'package:hyphen/data/mock_products.dart';
 
 class AdminPage extends StatefulWidget {
@@ -24,6 +26,15 @@ class _AdminPageState extends State<AdminPage> {
   // Admin Account Details
   final String _adminUsername = 'admin';
   final String _adminEmail = 'admin@hypen.com';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AdminManager().fetchDashboardStats();
+      AdminManager().fetchPendingProducts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,15 +235,18 @@ class _AdminPageState extends State<AdminPage> {
 
   Widget _buildDrawerLogOutCard() {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         Navigator.pop(context); // Close drawer
         Navigator.pop(context); // Exit Admin Portal
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Logged out from Admin Mode'),
-            duration: Duration(milliseconds: 1000),
-          ),
-        );
+        await AuthManager().logout();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Logged out successfully'),
+              duration: Duration(milliseconds: 1000),
+            ),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -284,10 +298,13 @@ class _AdminPageState extends State<AdminPage> {
   // --- TAB 1: DASHBOARD ---
   Widget _buildDashboardTab(Color brandColor) {
     return ListenableBuilder(
-      listenable: ProductManager(),
+      listenable: AdminManager(),
       builder: (context, child) {
-        final verifiedCount = ProductManager().products.where((p) => p.isVerified).length;
-        final pendingCount = ProductManager().products.where((p) => !p.isVerified).length;
+        final stats = AdminManager().stats;
+        final totalUsers = stats?.totalUsers.toString() ?? '-';
+        final activeSellers = stats?.activeSellers.toString() ?? '-';
+        final curatedCount = stats?.curatedProducts.toString() ?? '-';
+        final pendingCount = stats?.pendingProducts.toString() ?? '-';
 
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -316,22 +333,22 @@ class _AdminPageState extends State<AdminPage> {
               // STAT CARDS LIST
               _buildMetricCard(
                 title: 'Total Users',
-                value: '14,209',
-                subText: '+12% growth this month',
+                value: totalUsers,
+                subText: 'Registered accounts',
                 icon: Icons.people_outline,
                 brandColor: brandColor,
               ),
               _buildMetricCard(
                 title: 'Active Sellers',
-                value: '342',
-                subText: '+5% active this week',
+                value: activeSellers,
+                subText: 'Sellers with products',
                 icon: Icons.storefront,
                 brandColor: brandColor,
               ),
               _buildMetricCard(
                 title: 'Curated Products',
-                value: '$verifiedCount',
-                subText: '$pendingCount pending approval',
+                value: curatedCount,
+                subText: '\$pendingCount pending approval',
                 icon: Icons.check_circle_outline,
                 brandColor: brandColor,
               ),
@@ -532,9 +549,9 @@ class _AdminPageState extends State<AdminPage> {
   // --- TAB 2: PRODUCT VERIFICATION QUEUE ---
   Widget _buildVerificationTab(Color brandColor) {
     return ListenableBuilder(
-      listenable: ProductManager(),
+      listenable: AdminManager(),
       builder: (context, child) {
-        final pendingProducts = ProductManager().products.where((p) => !p.isVerified).toList();
+        final pendingProducts = AdminManager().pendingProducts;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -544,25 +561,27 @@ class _AdminPageState extends State<AdminPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Product Verification',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Product Verification',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Review newly uploaded seller listings.',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: Colors.black45,
+                        Text(
+                          'Review newly uploaded seller listings.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: Colors.black45,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -660,7 +679,7 @@ class _AdminPageState extends State<AdminPage> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
+                  child: Image.network(
                     product.imageUrl,
                     width: 90,
                     height: 110,
@@ -749,18 +768,25 @@ class _AdminPageState extends State<AdminPage> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+                const SizedBox(width: 12),                Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      final verifiedProduct = product.copyWith(isVerified: true);
-                      ProductManager().updateProduct(verifiedProduct);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('"${product.title}" has been verified!'),
-                          backgroundColor: brandColor,
-                        ),
-                      );
+                    onPressed: () async {
+                      final error = await AdminManager().approveProduct(product.id);
+                      if (error == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('"\${product.title}" has been verified!'),
+                            backgroundColor: brandColor,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Gagal menyetujui produk: \$error'),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: brandColor,
@@ -803,18 +829,33 @@ class _AdminPageState extends State<AdminPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.plusJakartaSans(color: Colors.black54)),
+            child: Text('Cancel', style: GoogleFonts.plusJakartaSans(color: Colors.grey)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F)),
-            onPressed: () {
-              ProductManager().deleteProduct(product.id);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Rejected and deleted "${product.title}"')),
-              );
+            onPressed: () async {
+              Navigator.pop(context); // close dialog
+              final error = await AdminManager().rejectProduct(product.id);
+              if (error == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Product rejected and deleted.'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Gagal menolak produk: \$error'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
             },
-            child: Text('Reject & Delete', style: GoogleFonts.plusJakartaSans(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD32F2F),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Delete', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

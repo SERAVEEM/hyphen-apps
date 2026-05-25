@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createProduct, getAllProducts, getProductById, updateProduct, deleteProduct, getPendingProducts, approveProduct, rejectProduct} = require('@/controllers/product.controller');
+const { createProduct, getAllProducts, getProductById, updateProduct, deleteProduct, getPendingProducts, approveProduct, rejectProduct, getMyProducts } = require('@/controllers/product.controller');
 const { authMiddleware } = require('@/middleware/auth.middleware');
 const { roleMiddleware } = require('@/middleware/role.middleware');
 const {upload} = require('@/middleware/image.up.middleware');
@@ -9,6 +9,10 @@ const {upload} = require('@/middleware/image.up.middleware');
 router.post('/create', authMiddleware, upload.single('image'), createProduct);
 router.put('/update/:productId', authMiddleware, updateProduct);
 router.delete('/delete/:productId', authMiddleware, deleteProduct);
+
+// buat seller
+router.get('/myproducts', authMiddleware, getMyProducts);
+
 //buat admin
 router.get('/pending', authMiddleware, roleMiddleware, getPendingProducts);
 router.put('/:productId/approve', authMiddleware, roleMiddleware, approveProduct);

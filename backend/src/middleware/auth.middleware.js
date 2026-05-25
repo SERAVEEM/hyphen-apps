@@ -10,12 +10,15 @@ const authMiddleware = (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
+  console.log('Received Auth Header:', authHeader);
+  console.log('Extracted Token:', token);
 
   try {
     const decoded = jwt.verify(token, SECRET_KEY);
     req.user = decoded;
     next();
   } catch (err) {
+    console.error('JWT Verify Error:', err.message);
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({
         message: 'Access token expired, gunakan refresh token'

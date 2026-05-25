@@ -185,7 +185,7 @@ const login = async (req, res) => {
             role: user.role === 'admin' ? 'admin' : 'user'
         };
 
-        const accessToken = jwt.sign(payload, SECRET_KEY, { expiresIn: '15m' });
+        const accessToken = jwt.sign(payload, SECRET_KEY, { expiresIn: '7d' });
         const refreshToken = jwt.sign({ id: user.id }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
         const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
 

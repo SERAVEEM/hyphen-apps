@@ -26,12 +26,14 @@ function generateOTP() {
 }
 
 function validateUser(username, email, password) {
-    const usernameRegex = /^(?=.*\d)[A-Za-z\d]{8,}$/;
+    // Username: at least 3 characters. Allows letters, numbers, spaces, and basic symbols like _ or -
+    const usernameRegex = /^[\w\s.-]{3,}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    // Password: at least 6 characters, must contain at least 1 letter and 1 number. Allows special characters.
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
 
-    if (username.length < 8) return 'Username minimal 8 karakter';
-    if (!usernameRegex.test(username)) return 'Username harus mengandung minimal 1 angka';
+    if (username.trim().length < 3) return 'Username minimal 3 karakter';
+    if (!usernameRegex.test(username)) return 'Username mengandung karakter yang tidak diizinkan';
     if (!emailRegex.test(email)) return 'Email tidak valid';
     if (password.length < 6) return 'Password minimal 6 karakter';
     if (!passwordRegex.test(password)) return 'Password harus mengandung minimal 1 huruf dan 1 angka';

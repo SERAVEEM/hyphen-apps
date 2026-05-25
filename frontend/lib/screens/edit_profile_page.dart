@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hyphen/models/city.dart';
+import 'package:hyphen/widgets/city_autocomplete_field.dart';
+import 'package:hyphen/managers/auth_manager.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -11,12 +16,13 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Text controllers with initial mock user data
+  // Text controllers with initial user data
   late final TextEditingController _nameController;
   late final TextEditingController _dobController;
   late final TextEditingController _emailController;
-  late final TextEditingController _locationController;
   late final TextEditingController _phoneController;
+  City? _selectedCity;
+  bool _isLoading = false;
 
   // Selected avatar image path state
   String _avatarPath = 'assets/images/user_avatar.png';
@@ -32,11 +38,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: 'Alex Rivera');
-    _dobController = TextEditingController(text: '12/10/1996');
-    _emailController = TextEditingController(text: 'alex.rivera@example.com');
-    _locationController = TextEditingController(text: 'Jakarta, Indonesia');
-    _phoneController = TextEditingController(text: '+62 812 3456 7890');
+    final auth = AuthManager();
+    _nameController = TextEditingController(text: auth.fullName);
+    
+    // Parse DOB from YYYY-MM-DD to DD/MM/YYYY
+    String dobText = '';
+    if (auth.dob.isNotEmpty) {
+      try {
+        final parsed = DateTime.parse(auth.dob);
+        dobText = "${parsed.day.toString().padLeft(2, '0')}/${parsed.month.toString().padLeft(2, '0')}/${parsed.year}";
+      } catch (e) {
+        dobText = auth.dob;
+      }
+    }
+    _dobController = TextEditingController(text: dobText);
+    _emailController = TextEditingController(text: auth.email);
+    _phoneController = TextEditingController(text: auth.phone);
+    _avatarPath = auth.photoUrl.isNotEmpty ? auth.photoUrl : 'assets/images/user_avatar.png';
+    
+    if (auth.location.isNotEmpty) {
+      _selectedCity = City(id: 0, label: auth.location);
+    }
   }
 
   @override
@@ -44,7 +66,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController.dispose();
     _dobController.dispose();
     _emailController.dispose();
-    _locationController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -117,6 +138,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   ),
                   textAlign: TextAlign.center,
                 ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final picker = ImagePicker();
+                    final image = await picker.pickImage(source: ImageSource.gallery);
+                    if (image != null) {
+                      setState(() {
+                        _avatarPath = image.path;
+                      });
+                      Navigator.pop(context);
+                    }
+                  },
+                  icon: const Icon(Icons.photo_library_outlined, color: Color(0xFF8C7355)),
+                  label: Text(
+                    'Pick from phone gallery',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF8C7355),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF8C7355)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 SizedBox(
                   height: 100,
@@ -185,43 +233,87 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   // Handles updating user profile & showing notification
-  void _submitProfileUpdate() {
+  void _submitProfileUpdate() async {
     if (_formKey.currentState!.validate()) {
-      // Show success notification snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Profile updated successfully!',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFF8C7355),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          margin: const EdgeInsets.only(left: 20, right: 20, bottom: 40),
-          duration: const Duration(seconds: 2),
-        ),
+      setState(() {
+        _isLoading = true;
+      });
+
+      String sendDob = '';
+      if (_dobController.text.isNotEmpty) {
+        final parts = _dobController.text.split('/');
+        if (parts.length == 3) {
+          sendDob = "${parts[2]}-${parts[1]}-${parts[0]}";
+        } else {
+          sendDob = _dobController.text;
+        }
+      }
+
+      final success = await AuthManager().updateProfile(
+        fullNameVal: _nameController.text.trim(),
+        phoneVal: _phoneController.text.trim(),
+        dobVal: sendDob,
+        locationVal: _selectedCity?.label ?? '',
+        usernameVal: AuthManager().userName,
+        emailVal: _emailController.text.trim(),
       );
 
-      // Return to user profile page after a brief delay
-      Future.delayed(const Duration(milliseconds: 1800), () {
-        if (mounted) {
-          Navigator.pop(context);
-        }
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
       });
+
+      if (success) {
+        // Upload photo if it has changed
+        if (_avatarPath != AuthManager().photoUrl) {
+          await AuthManager().uploadProfilePhoto(_avatarPath);
+        }
+
+        // Show success notification snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Profile updated successfully!',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF8C7355),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            margin: const EdgeInsets.only(left: 20, right: 20, bottom: 40),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Return to user profile page after a brief delay
+        Future.delayed(const Duration(milliseconds: 1800), () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update profile. Please try again.'),
+            backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -283,7 +375,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               child: CircleAvatar(
                                 radius: 70,
                                 backgroundColor: Colors.grey.shade100,
-                                backgroundImage: AssetImage(_avatarPath),
+                                backgroundImage: _avatarPath.startsWith('http')
+                                    ? NetworkImage(_avatarPath)
+                                    : _avatarPath.startsWith('assets/')
+                                        ? AssetImage(_avatarPath) as ImageProvider
+                                        : FileImage(File(_avatarPath)) as ImageProvider,
                               ),
                             ),
                           ],
@@ -328,10 +424,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                       const SizedBox(height: 16),
 
-                      _buildTextField(
-                        controller: _locationController,
-                        hint: 'Location',
-                        icon: Icons.location_on_outlined,
+                      CityAutocompleteField(
+                        labelText: 'Location (Kota)',
+                        hintText: 'Ketik nama kota, misal: Jakarta',
+                        initialValue: _selectedCity?.label,
+                        onSelected: (City city) {
+                          setState(() {
+                            _selectedCity = city;
+                          });
+                        },
                       ),
                       const SizedBox(height: 16),
 
@@ -373,13 +474,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: Text(
-                    'Update Profile',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          'Update Profile',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ),

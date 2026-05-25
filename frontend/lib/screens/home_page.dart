@@ -11,6 +11,7 @@ import 'package:hyphen/managers/product_manager.dart';
 import 'package:hyphen/screens/admin_page.dart';
 import 'package:hyphen/widgets/user_drawer.dart';
 import 'package:hyphen/screens/inbox_page.dart';
+import 'package:hyphen/managers/auth_manager.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -23,6 +24,16 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   int _devTapCount = 0;
   DateTime? _lastDevTapTime;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch real products and check login status when Home Page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ProductManager().fetchProducts();
+      AuthManager().checkAuthStatus();
+    });
+  }
 
   void _onDeveloperTap() {
     final now = DateTime.now();
@@ -242,7 +253,24 @@ class _HomePageState extends State<HomePage> {
           ListenableBuilder(
             listenable: ProductManager(),
             builder: (context, child) {
-              final products = ProductManager().products.where((p) => p.isVerified).toList();
+              final manager = ProductManager();
+              if (manager.isLoading) {
+                return const SizedBox(
+                  height: 520,
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF8C7355)),
+                  ),
+                );
+              }
+              final products = manager.products.where((p) => p.isVerified).toList();
+              if (products.isEmpty) {
+                return const SizedBox(
+                  height: 520,
+                  child: Center(
+                    child: Text('Belum ada produk', style: TextStyle(color: Colors.grey)),
+                  ),
+                );
+              }
               return SizedBox(
                 height: 520,
                 child: ListView.builder(
@@ -306,9 +334,25 @@ class _HomePageState extends State<HomePage> {
                 ListenableBuilder(
                   listenable: ProductManager(),
                   builder: (context, child) {
-                    final products = ProductManager().products.where((p) => p.isVerified).toList();
-                    // Show a different set or reverse order of products for variety
+                    final manager = ProductManager();
+                    if (manager.isLoading) {
+                      return const SizedBox(
+                        height: 520,
+                        child: Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      );
+                    }
+                    final products = manager.products.where((p) => p.isVerified).toList();
                     final displayProducts = products.reversed.toList();
+                    if (displayProducts.isEmpty) {
+                      return const SizedBox(
+                        height: 520,
+                        child: Center(
+                          child: Text('Belum ada produk', style: TextStyle(color: Colors.white70)),
+                        ),
+                      );
+                    }
                     return SizedBox(
                       height: 520,
                       child: ListView.builder(
@@ -349,12 +393,31 @@ class _HomePageState extends State<HomePage> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(5),
-              child: Image.asset(
-                product.imageUrl,
-                height: 360,
-                width: 280,
-                fit: BoxFit.cover,
-              ),
+              child: product.imageUrl.startsWith('http')
+                  ? Image.network(
+                      product.imageUrl,
+                      height: 360,
+                      width: 280,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 360,
+                        width: 280,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                      ),
+                    )
+                  : Image.asset(
+                      product.imageUrl.isNotEmpty ? product.imageUrl : 'assets/images/placeholder.png',
+                      height: 360,
+                      width: 280,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 360,
+                        width: 280,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                      ),
+                    ),
             ),
             const SizedBox(height: 12),
             Text(

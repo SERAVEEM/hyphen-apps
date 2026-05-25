@@ -25,23 +25,24 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // Simulate network request
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (!mounted) return;
-        AuthManager().login(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
-        setState(() {
-          _isLoading = false;
-        });
-        
+      final success = await AuthManager().login(
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Selamat datang kembali, ${AuthManager().userName}!'),
@@ -50,7 +51,15 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
         Navigator.pop(context); // Go back to where we came from
-      });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login gagal. Periksa kembali email dan password Anda.'),
+            backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
