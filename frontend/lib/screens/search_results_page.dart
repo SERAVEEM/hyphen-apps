@@ -339,10 +339,23 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    product.imageUrl,
-                    fit: BoxFit.cover,
-                  ),
+                  product.imageUrl.startsWith('http')
+                    ? Image.network(
+                        product.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: const Color(0xFFF3F3F3),
+                          child: const Icon(Icons.broken_image, color: Colors.grey),
+                        ),
+                      )
+                    : Image.asset(
+                        product.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: const Color(0xFFF3F3F3),
+                          child: const Icon(Icons.broken_image, color: Colors.grey),
+                        ),
+                      ),
                   Positioned(
                     top: 10,
                     right: 10,
@@ -514,11 +527,25 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
                               Expanded(
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    product.imageUrl,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                  ),
+                                  child: product.imageUrl.startsWith('http')
+                                    ? Image.network(
+                                        product.imageUrl,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: const Color(0xFFF3F3F3),
+                                          child: const Icon(Icons.broken_image, color: Colors.grey),
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        product.imageUrl,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: const Color(0xFFF3F3F3),
+                                          child: const Icon(Icons.broken_image, color: Colors.grey),
+                                        ),
+                                      ),
                                 ),
                               ),
                               const SizedBox(height: 6),

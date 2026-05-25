@@ -28,7 +28,7 @@ class UserProfile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildUserCard(context, auth.userName),
+              _buildUserCard(context, auth),
               const SizedBox(height: 20),
 
               _buildJualBanner(context),
@@ -96,7 +96,7 @@ class UserProfile extends StatelessWidget {
     );
   }
 
-  Widget _buildUserCard(BuildContext context, String userName) {
+  Widget _buildUserCard(BuildContext context, AuthManager auth) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -122,10 +122,12 @@ class UserProfile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Row(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 28,
-              backgroundColor: Color(0xFFF3F3F3),
-              backgroundImage: AssetImage('assets/images/user_avatar.png'),
+              backgroundColor: const Color(0xFFF3F3F3),
+              backgroundImage: auth.photoUrl.isNotEmpty
+                  ? NetworkImage(auth.photoUrl)
+                  : const AssetImage('assets/images/user_avatar.png') as ImageProvider,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -133,7 +135,7 @@ class UserProfile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    userName,
+                    auth.fullName,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,

@@ -12,14 +12,14 @@ class CartPage extends StatefulWidget {
 
 class _CartPageState extends State<CartPage> {
   final CartManager _cartManager = CartManager();
-  final Set<CartItem> _selectedItems = {};
+  CartItem? _selectedItem;
 
   @override
   void initState() {
     super.initState();
     _cartManager.addListener(_onCartChanged);
-    // Initialize selected items with all items in the cart
-    _selectedItems.addAll(_cartManager.items);
+    _cartManager.fetchCart(); // Fetch from backend when page opens
+
     // Clear any active SnackBars
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScaffoldMessenger.of(context).clearSnackBars();
@@ -35,9 +35,13 @@ class _CartPageState extends State<CartPage> {
   void _onCartChanged() {
     if (mounted) {
       setState(() {
-        // Sync selected items with current items in cart (remove any that were deleted)
-        final currentSet = _cartManager.items.toSet();
-        _selectedItems.retainAll(currentSet);
+        // Clear selection if the item was removed from cart
+        if (_selectedItem != null) {
+          final exists = _cartManager.items.any((item) => item.id == _selectedItem!.id);
+          if (!exists) {
+            _selectedItem = null;
+          }
+        }
       });
     }
   }
@@ -107,23 +111,25 @@ class _CartPageState extends State<CartPage> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: items.isEmpty
-            ? _buildEmptyState(brandBrown)
-            : ListView.separated(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(top: 16, bottom: 24),
-                itemCount: groupedItems.length,
-                separatorBuilder: (context, index) => const Divider(
-                  height: 32,
-                  thickness: 8,
-                  color: Color(0xFFF6F6F6),
-                ),
-                itemBuilder: (context, index) {
-                  final brand = groupedItems.keys.elementAt(index);
-                  final sellerItems = groupedItems[brand]!;
-                  return _buildSellerGroup(brand, sellerItems, brandBrown);
-                },
-              ),
+        child: _cartManager.isLoading
+            ? const Center(child: CircularProgressIndicator(color: brandBrown))
+            : items.isEmpty
+                ? _buildEmptyState(brandBrown)
+                : ListView.separated(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.only(top: 16, bottom: 24),
+                    itemCount: groupedItems.length,
+                    separatorBuilder: (context, index) => const Divider(
+                      height: 32,
+                      thickness: 8,
+                      color: Color(0xFFF6F6F6),
+                    ),
+                    itemBuilder: (context, index) {
+                      final brand = groupedItems.keys.elementAt(index);
+                      final sellerItems = groupedItems[brand]!;
+                      return _buildSellerGroup(brand, sellerItems, brandBrown);
+                    },
+                  ),
       ),
       bottomNavigationBar: items.isEmpty
           ? null
@@ -143,27 +149,12 @@ class _CartPageState extends State<CartPage> {
               child: SafeArea(
                 child: Row(
                   children: [
-                    // Select All checkbox
-                    Checkbox(
-                      value: _selectedItems.length == items.length && items.isNotEmpty,
-                      activeColor: brandBrown,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      onChanged: (value) {
-                        setState(() {
-                          if (value == true) {
-                            _selectedItems.addAll(items);
-                          } else {
-                            _selectedItems.clear();
-                          }
-                        });
-                      },
-                    ),
                     Text(
-                      'Semua',
+                      'Pilih 1 item\nuntuk checkout',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: Colors.black54,
                       ),
                     ),
                     const Spacer(),
@@ -181,8 +172,7 @@ class _CartPageState extends State<CartPage> {
                           ),
                         ),
                         Text(
-                          _formatVal(_selectedItems.fold(
-                              0.0, (sum, item) => sum + (item.product.price * item.quantity))),
+                          _formatVal(_selectedItem != null ? (_selectedItem!.product.price * _selectedItem!.quantity) : 0.0),
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
@@ -194,7 +184,7 @@ class _CartPageState extends State<CartPage> {
                     const SizedBox(width: 16),
                     // Checkout Button
                     ElevatedButton(
-                      onPressed: _selectedItems.isEmpty
+                      onPressed: _selectedItem == null
                           ? null
                           : () {
                               ScaffoldMessenger.of(context).clearSnackBars();
@@ -202,7 +192,7 @@ class _CartPageState extends State<CartPage> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => CheckoutPage(
-                                    checkoutItems: _selectedItems.toList(),
+                                    checkoutItem: _selectedItem!,
                                   ),
                                 ),
                               );
@@ -216,11 +206,11 @@ class _CartPageState extends State<CartPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: _selectedItems.isEmpty ? 0 : 4,
+                        elevation: _selectedItem == null ? 0 : 4,
                         shadowColor: brandBrown.withValues(alpha: 0.3),
                       ),
                       child: Text(
-                        'Checkout (${_selectedItems.length})',
+                        'Checkout (1)',
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
@@ -236,7 +226,6 @@ class _CartPageState extends State<CartPage> {
 
   Widget _buildSellerGroup(String brand, List<CartItem> sellerItems, Color brandBrown) {
     final sellerDetails = _getSellerDetails(brand);
-    final bool isAllSelected = sellerItems.every((item) => _selectedItems.contains(item));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,25 +235,6 @@ class _CartPageState extends State<CartPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             children: [
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: Checkbox(
-                  value: isAllSelected,
-                  activeColor: brandBrown,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                  onChanged: (value) {
-                    setState(() {
-                      if (value == true) {
-                        _selectedItems.addAll(sellerItems);
-                      } else {
-                        _selectedItems.removeAll(sellerItems);
-                      }
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
               // Avatar
               Container(
                 width: 36,
@@ -356,10 +326,23 @@ class _CartPageState extends State<CartPage> {
           // Product image with rounded corners
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              item.product.imageUrl,
-              fit: BoxFit.cover,
-            ),
+            child: item.product.imageUrl.startsWith('http')
+              ? Image.network(
+                  item.product.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFFF3F3F3),
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  ),
+                )
+              : Image.asset(
+                  item.product.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFFF3F3F3),
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  ),
+                ),
           ),
           // Dark gradient overlay
           Container(
@@ -422,17 +405,17 @@ class _CartPageState extends State<CartPage> {
                     width: 24,
                     height: 24,
                     child: Checkbox(
-                      value: _selectedItems.contains(item),
+                      value: _selectedItem?.id == item.id,
                       activeColor: Colors.black,
                       checkColor: Colors.white,
                       side: const BorderSide(color: Colors.white, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Circular like radio
                       onChanged: (value) {
                         setState(() {
                           if (value == true) {
-                            _selectedItems.add(item);
+                            _selectedItem = item;
                           } else {
-                            _selectedItems.remove(item);
+                            _selectedItem = null;
                           }
                         });
                       },

@@ -4,6 +4,10 @@ import 'package:hyphen/managers/product_manager.dart';
 import 'package:hyphen/data/mock_products.dart';
 import 'package:hyphen/widgets/photo_uploader_box.dart';
 import 'package:hyphen/widgets/selling_tips_box.dart';
+import 'package:hyphen/models/city.dart';
+import 'package:hyphen/widgets/city_autocomplete_field.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class SellPage extends StatefulWidget {
   final VoidCallback? onUploadSuccess;
@@ -27,89 +31,27 @@ class _SellPageState extends State<SellPage> {
   double? _enteredPrice;
   String _selectedSize = 'M';
   String _selectedCondition = 'Sangat Baik';
-
-  final List<Map<String, String>> _mockPhotos = [
-    {'path': 'assets/images/PreFall.png', 'name': 'Velvet Shirt'},
-    {'path': 'assets/images/jacket_product.png', 'name': 'Puffer Jacket'},
-    {'path': 'assets/images/cat_daily.png', 'name': 'Knit Sweater'},
-    {'path': 'assets/images/cat_formal.png', 'name': 'Wool Trench Coat'},
-    {'path': 'assets/images/slide1.png', 'name': 'Varsity Jacket'},
-  ];
+  bool _isUploading = false;
+  City? _selectedCity;
+  final TextEditingController _weightController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
-  void _showPhotoPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Pilih Foto Baju',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 120,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _mockPhotos.length,
-                  itemBuilder: (context, index) {
-                    final photo = _mockPhotos[index];
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedImagePath = photo['path'];
-                          // Pre-fill name if empty
-                          if (_nameController.text.isEmpty) {
-                            _nameController.text = photo['name']!;
-                          }
-                        });
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 12),
-                        width: 100,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(11),
-                          child: Image.asset(
-                            photo['path']!,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
+  Future<void> _showPhotoPicker() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      setState(() {
+        _selectedImagePath = image.path;
+      });
+    }
   }
 
   void _showCategoryPicker() {
@@ -325,7 +267,7 @@ class _SellPageState extends State<SellPage> {
     );
   }
 
-  void _uploadProduct() {
+  Future<void> _uploadProduct() async {
     if (_selectedImagePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Silakan tambahkan foto baju terlebih dahulu.')),
@@ -350,33 +292,61 @@ class _SellPageState extends State<SellPage> {
       );
       return;
     }
+    if (_selectedCity == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan pilih kota asal pengiriman.')),
+      );
+      return;
+    }
+    if (_weightController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan masukkan berat barang.')),
+      );
+      return;
+    }
 
-    final newProduct = Product(
-      id: 'prod_${DateTime.now().millisecondsSinceEpoch}',
-      title: _nameController.text.trim(),
-      brand: 'Alex Rivera', // Seller's name
+    setState(() {
+      _isUploading = true;
+    });
+
+    final errorMessage = await ProductManager().uploadProduct(
+      name: _nameController.text.trim(),
+      description: _descController.text.trim().isEmpty ? 'Baju preloved berkualitas dari Hyphen' : _descController.text.trim(),
       price: _enteredPrice!,
-      imageUrl: _selectedImagePath!,
-      size: _selectedSize,
-      condition: _selectedCondition,
       category: _selectedCategory,
-      isVerified: false,
+      size: _selectedSize,
+      conditionLabel: _selectedCondition,
+      imagePath: _selectedImagePath!,
+      originCityId: _selectedCity!.id.toString(),
+      originCityLabel: _selectedCity!.label,
+      weight: _weightController.text.trim(),
     );
 
-    // Save to global state
-    ProductManager().addProduct(newProduct);
+    if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('"${newProduct.title}" berhasil diupload!')),
-    );
+    setState(() {
+      _isUploading = false;
+    });
 
-    if (widget.onUploadSuccess != null) {
-      widget.onUploadSuccess!();
-    } else {
-      // Default behavior if opened as modal
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
+    if (errorMessage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"${_nameController.text.trim()}" berhasil diupload!')),
+      );
+
+      if (widget.onUploadSuccess != null) {
+        widget.onUploadSuccess!();
+      } else {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -494,26 +464,81 @@ class _SellPageState extends State<SellPage> {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+            Text(
+              'Info Pengiriman',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 12),
+            CityAutocompleteField(
+              onSelected: (City city) {
+                setState(() {
+                  _selectedCity = city;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _weightController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Berat Barang (gram)',
+                hintText: 'Contoh: 500 (untuk 500 gram)',
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  color: Colors.black38,
+                  fontSize: 14,
+                ),
+                labelStyle: GoogleFonts.plusJakartaSans(
+                  color: Colors.black54,
+                  fontSize: 14,
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF6F6F6),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.all(16),
+                suffixIcon: const Icon(Icons.scale_outlined, color: Colors.black26),
+              ),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
             const SizedBox(height: 40),
 
-            ElevatedButton(
-              onPressed: _uploadProduct,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: brandBrown,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            SizedBox(
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _isUploading ? null : _uploadProduct,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: brandBrown,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              child: Text(
-                'Upload',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
+                child: _isUploading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : Text(
+                        'Upload',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 24),

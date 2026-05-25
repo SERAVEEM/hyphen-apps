@@ -23,6 +23,7 @@ const addressRoutes = require('@/routes/address.routes');
 const shippingRoutes = require('@/routes/shipping.routes');
 const checkoutRoutes = require('@/routes/checkout.routes');
 const chatRoutes = require('@/routes/chat.routes');
+const adminRoutes = require('@/routes/admin.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -134,6 +135,7 @@ app.use('/api/v1/address', addressRoutes);
 app.use('/api/v1/shipping', shippingRoutes);
 app.use('/api/v1/checkout', checkoutRoutes);
 app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 //==== global error handler ====
 app.use((err, req, res, next) => {

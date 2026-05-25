@@ -28,6 +28,7 @@ class _SizeSelectorSheetState extends State<_SizeSelectorSheet> {
   final List<String> _sizes = ['S', 'M', 'L', 'XL'];
   late String _selectedSize;
   int _quantity = 1;
+  bool _isAddingToCart = false;
 
   @override
   void initState() {
@@ -77,12 +78,31 @@ class _SizeSelectorSheetState extends State<_SizeSelectorSheet> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  widget.product.imageUrl,
-                  height: 100,
-                  width: 80,
-                  fit: BoxFit.cover,
-                ),
+                child: widget.product.imageUrl.startsWith('http')
+                  ? Image.network(
+                      widget.product.imageUrl,
+                      height: 100,
+                      width: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 100,
+                        width: 80,
+                        color: const Color(0xFFF3F3F3),
+                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                      ),
+                    )
+                  : Image.asset(
+                      widget.product.imageUrl,
+                      height: 100,
+                      width: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 100,
+                        width: 80,
+                        color: const Color(0xFFF3F3F3),
+                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                      ),
+                    ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -219,36 +239,56 @@ class _SizeSelectorSheetState extends State<_SizeSelectorSheet> {
 
           // Add to Cart Button
           ElevatedButton(
-            onPressed: () {
-              CartManager().addItem(
-                widget.product,
-                size: _selectedSize,
-                quantity: _quantity,
-              );
-              Navigator.pop(context); // Close bottom sheet
+            onPressed: _isAddingToCart
+                ? null
+                : () async {
+                    setState(() {
+                      _isAddingToCart = true;
+                    });
+                    final error = await CartManager().addItem(
+                      widget.product,
+                      size: _selectedSize,
+                      quantity: _quantity,
+                    );
+                    
+                    if (!mounted) return;
+                    
+                    setState(() {
+                      _isAddingToCart = false;
+                    });
 
-              // Show snackbar confirmation
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  content: Text('${widget.product.title} ($_selectedSize) dimasukkan ke keranjang.'),
-                  duration: const Duration(seconds: 3),
-                  action: SnackBarAction(
-                    label: 'Lihat Keranjang',
-                    textColor: Colors.amber.shade400,
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).clearSnackBars();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CartPage(),
-                        ),
+                    if (error != null) {
+                      Navigator.pop(context); // Close bottom sheet
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error)),
                       );
-                    },
-                  ),
-                ),
-              );
-            },
+                      return;
+                    }
+
+                    Navigator.pop(context); // Close bottom sheet
+
+                    // Show snackbar confirmation
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        content: Text('${widget.product.title} ($_selectedSize) dimasukkan ke keranjang.'),
+                        duration: const Duration(seconds: 3),
+                        action: SnackBarAction(
+                          label: 'Lihat Keranjang',
+                          textColor: Colors.amber.shade400,
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CartPage(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
@@ -258,13 +298,19 @@ class _SizeSelectorSheetState extends State<_SizeSelectorSheet> {
               ),
               elevation: 0,
             ),
-            child: Text(
-              'Tambah ke Keranjang',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-              ),
-            ),
+            child: _isAddingToCart
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : Text(
+                    'Tambah ke Keranjang',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
           ),
         ],
       ),

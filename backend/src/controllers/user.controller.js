@@ -36,10 +36,16 @@ const createProfile = async (req, res) => {
         if (!fullname) {
             return res.status(400).json({ message: 'Nama lengkap wajib diisi' });
         }
-        if (phone && !/^[0-9]{10,13}$/.test(phone)) {
-            return res.status(400).json({ message: 'Format nomor telepon tidak valid' });
+
+        let formattedPhone = phone ? phone.replace(/[^0-9]/g, '') : null;
+        if (formattedPhone === '') formattedPhone = null;
+
+        if (formattedPhone && !/^[0-9]{10,14}$/.test(formattedPhone)) {
+            return res.status(400).json({ message: 'Format nomor telepon tidak valid. Harus berupa angka 10-14 digit.' });
         }
-        if (dateOfBirth && isNaN(new Date(dateOfBirth))) {
+
+        let formattedDob = dateOfBirth && dateOfBirth.trim() !== '' ? dateOfBirth : null;
+        if (formattedDob && isNaN(new Date(formattedDob))) {
             return res.status(400).json({ message: 'Format tanggal tidak valid' });
         }
 
@@ -53,12 +59,12 @@ const createProfile = async (req, res) => {
 
         await pool.query(
             'INSERT INTO user_profiles (userId, fullname, phone, dateOfBirth, location) VALUES (?, ?, ?, ?, ?)',
-            [userId, fullname, phone || null, dateOfBirth || null, location || null]
+            [userId, fullname, formattedPhone, formattedDob, location || null]
         );
 
         return res.status(201).json({
             message: 'Profil berhasil dibuat',
-            data: { fullname, phone, dateOfBirth, location }
+            data: { fullname, phone: formattedPhone, dateOfBirth: formattedDob, location }
         });
     } catch (error) {
         console.error('createProfile error:', error);
@@ -74,12 +80,18 @@ const updateProfile = async (req, res) => {
         const { fullname, phone, dateOfBirth, location, username, email } = req.body;
         const userId = req.user.id;
 
-        if (phone && !/^[0-9]{10,13}$/.test(phone)) {
-            return res.status(400).json({ message: 'Format nomor telepon tidak valid' });
+        let formattedPhone = phone ? phone.replace(/[^0-9]/g, '') : null;
+        if (formattedPhone === '') formattedPhone = null;
+
+        if (formattedPhone && !/^[0-9]{10,14}$/.test(formattedPhone)) {
+            return res.status(400).json({ message: 'Format nomor telepon tidak valid. Harus berupa angka 10-14 digit.' });
         }
-        if (dateOfBirth && isNaN(new Date(dateOfBirth))) {
+
+        let formattedDob = dateOfBirth && dateOfBirth.trim() !== '' ? dateOfBirth : null;
+        if (formattedDob && isNaN(new Date(formattedDob))) {
             return res.status(400).json({ message: 'Format tanggal tidak valid' });
         }
+
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return res.status(400).json({ message: 'Format email tidak valid' });
         }
@@ -118,7 +130,7 @@ const updateProfile = async (req, res) => {
                 dateOfBirth = COALESCE(?, dateOfBirth),
                 location    = COALESCE(?, location)
              WHERE userId = ?`,
-            [fullname || null, phone || null, dateOfBirth || null, location || null, userId]
+            [fullname || null, formattedPhone, formattedDob, location || null, userId]
         );
 
         // Ambil data terbaru

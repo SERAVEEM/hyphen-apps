@@ -151,6 +151,48 @@ const getAllProducts = async (req, res) => {
     }
 };
 
+// ========================= GET MY PRODUCTS (SELLER) =========================
+// GET /product/myproducts
+const getMyProducts = async (req, res) => {
+    try {
+        const sellerID = req.user.id;
+        let query = `
+            SELECT p.*, GROUP_CONCAT(ps.size) as availableSizes
+            FROM products p
+            LEFT JOIN product_sizes ps ON p.id = ps.productId
+            WHERE p.sellerID = ?
+            GROUP BY p.id
+            ORDER BY p.createdAt DESC
+        `;
+
+        const [products] = await pool.query(query, [sellerID]);
+
+        const productIds = products.map(p => p.id);
+        let sizesMap = {};
+        if (productIds.length > 0) {
+            const [allSizes] = await pool.query(
+                'SELECT productId, size, stock FROM product_sizes WHERE productId IN (?)',
+                [productIds]
+            );
+            allSizes.forEach(s => {
+                if (!sizesMap[s.productId]) sizesMap[s.productId] = [];
+                sizesMap[s.productId].push({ size: s.size, stock: s.stock });
+            });
+        }
+
+        const result = products.map(p => formatProduct(p, sizesMap[p.id] || []));
+
+        return res.status(200).json({
+            message: 'Berhasil ambil produk saya',
+            total: result.length,
+            data: result
+        });
+    } catch (error) {
+        console.error('getMyProducts error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+
 // ========================= GET PRODUCT BY ID =========================
 const getProductById = async (req, res) => {
     try {
@@ -402,5 +444,6 @@ module.exports = {
     orderProduct,
     getPendingProducts,
     approveProduct,
-    rejectProduct
+    rejectProduct,
+    getMyProducts
 };

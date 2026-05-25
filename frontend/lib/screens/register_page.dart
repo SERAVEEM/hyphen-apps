@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hyphen/managers/auth_manager.dart';
 import 'package:hyphen/screens/login_page.dart';
+import 'package:hyphen/screens/otp_verification_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -29,33 +30,49 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  void _handleRegister() {
+  void _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // Simulate network request
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (!mounted) return;
-        AuthManager().register(
-          _nameController.text.trim(),
-          _emailController.text.trim(),
-        );
-        setState(() {
-          _isLoading = false;
-        });
+      final errorMessage = await AuthManager().register(
+        _nameController.text.trim(),
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
 
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Pendaftaran berhasil! Selamat datang, ${AuthManager().userName}!'),
-            backgroundColor: const Color(0xFF8C7355),
-            duration: const Duration(seconds: 2),
+          const SnackBar(
+            content: Text('Pendaftaran berhasil! Silakan cek email Anda untuk OTP verifikasi.'),
+            backgroundColor: Color(0xFF8C7355),
+            duration: Duration(seconds: 4),
           ),
         );
-        
-        Navigator.pop(context); // Close registration view
-      });
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtpVerificationPage(
+              email: _emailController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage), // Shows actual error from the backend
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 

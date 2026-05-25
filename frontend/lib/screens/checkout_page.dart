@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hyphen/managers/cart_manager.dart';
+import 'package:hyphen/managers/checkout_manager.dart';
+import 'package:hyphen/models/city.dart';
+import 'package:hyphen/widgets/city_autocomplete_field.dart';
 import 'package:hyphen/screens/payment_page.dart';
 
 // Address model
 class AddressInfo {
+  final String? id;
   final String name;
   final String phone;
   final String fullAddress;
+  final String? cityId;
+  final String? cityLabel;
 
   AddressInfo({
+    this.id,
     required this.name,
     required this.phone,
     required this.fullAddress,
+    this.cityId,
+    this.cityLabel,
   });
 }
 
@@ -43,9 +52,9 @@ class PaymentOption {
 }
 
 class CheckoutPage extends StatefulWidget {
-  final List<CartItem> checkoutItems;
+  final CartItem checkoutItem;
 
-  const CheckoutPage({super.key, required this.checkoutItems});
+  const CheckoutPage({super.key, required this.checkoutItem});
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
@@ -53,7 +62,7 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   AddressInfo? _address;
-  final Map<String, CourierOption> _selectedCouriers = {};
+  CourierOption? _selectedCourier;
   PaymentOption? _selectedPayment;
 
   // Mock list of courier options (RajaOngkir preparation)
@@ -63,22 +72,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
     CourierOption(courierName: 'JNE Express', serviceName: 'JNE YES', price: 28000.0, etd: '1'),
   ];
 
-  // Group items by brand/seller
-  Map<String, List<CartItem>> get _groupedItems {
-    final Map<String, List<CartItem>> groups = {};
-    for (var item in widget.checkoutItems) {
-      groups.putIfAbsent(item.product.brand, () => []).add(item);
-    }
-    return groups;
-  }
-
   // Calculate pricing summary
   double get _subtotal {
-    return widget.checkoutItems.fold(0.0, (sum, item) => sum + (item.product.price * item.quantity));
+    return widget.checkoutItem.product.price * widget.checkoutItem.quantity;
   }
 
   double get _shippingFee {
-    return _selectedCouriers.values.fold(0.0, (sum, courier) => sum + courier.price);
+    return _selectedCourier?.price ?? 0.0;
   }
 
   double get _serviceFee => _address != null ? 2000.0 : 0.0;
@@ -101,11 +101,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
   @override
   void initState() {
     super.initState();
-    // Default JNE Reguler for each brand group
-    final groups = _groupedItems;
-    for (var brand in groups.keys) {
-      _selectedCouriers[brand] = _courierOptions[1]; // JNE Reguler
-    }
+    // Default JNE Reguler
+    _selectedCourier = _courierOptions[1]; // JNE Reguler
+
     // Default payment method is QRIS
     _selectedPayment = PaymentOption(name: 'QRIS', type: 'QRIS');
 
@@ -153,8 +151,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     _buildAddressSection(brandBrown),
                     const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
 
-                    // Grouped Items and Shipping Selection per brand
-                    _buildGroupedItemsAndShipping(brandBrown),
+                    // Item and Shipping Selection
+                    _buildItemAndShipping(brandBrown),
 
                     // Payment Method Section (Pembayaran)
                     _buildPaymentMethodSection(brandBrown),
@@ -305,190 +303,171 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  Widget _buildGroupedItemsAndShipping(Color brandBrown) {
-    final groups = _groupedItems;
+  Widget _buildItemAndShipping(Color brandBrown) {
     final hasAddress = _address != null;
+    final item = widget.checkoutItem;
+    final brand = item.product.brand;
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: groups.length,
-      itemBuilder: (context, index) {
-        final brand = groups.keys.elementAt(index);
-        final brandItems = groups[brand]!;
-        final selectedCourier = _selectedCouriers[brand];
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Brand Header
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 16.0, bottom: 8.0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      brand.substring(0, brand.length > 2 ? 2 : brand.length).toUpperCase(),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: brandBrown,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    brand.toLowerCase(),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Brand Items List
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              itemCount: brandItems.length,
-              itemBuilder: (context, idx) {
-                final item = brandItems[idx];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          item.product.imageUrl,
-                          height: 70,
-                          width: 60,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.product.title,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${item.size} · ${item.product.condition}',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_formatVal(item.product.price)}  x ${item.quantity}',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        _formatVal(item.product.price * item.quantity),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            // Courier Selection for this Brand
-            if (hasAddress)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                child: InkWell(
-                  onTap: () => _openCourierSelector(brand),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildJneLogo(),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                selectedCourier != null
-                                    ? '${selectedCourier.courierName} (${selectedCourier.serviceName})'
-                                    : 'Pilih Pengiriman',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                selectedCourier != null
-                                    ? 'Estimasi tiba ${selectedCourier.etd} hari · ${_formatVal(selectedCourier.price)}'
-                                    : 'Tekan untuk memilih kurir',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.keyboard_arrow_right, color: Colors.black54, size: 20),
-                      ],
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Brand Header
+        Padding(
+          padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 16.0, bottom: 8.0),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  brand.substring(0, brand.length > 2 ? 2 : brand.length).toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: brandBrown,
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+              Text(
+                brand.toLowerCase(),
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.0),
-              child: Divider(height: 16, thickness: 1, color: Color(0xFFEEEEEE)),
+        // Item
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  item.product.imageUrl,
+                  height: 70,
+                  width: 60,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.product.title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${item.size} · ${item.product.condition}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_formatVal(item.product.price)}  x ${item.quantity}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                _formatVal(item.product.price * item.quantity),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Courier Selection
+        if (hasAddress)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+            child: InkWell(
+              onTap: () => _openCourierSelector(),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    _buildJneLogo(),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedCourier != null
+                                ? '${_selectedCourier!.courierName} (${_selectedCourier!.serviceName})'
+                                : 'Pilih Pengiriman',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _selectedCourier != null
+                                ? 'Estimasi tiba ${_selectedCourier!.etd} hari · ${_formatVal(_selectedCourier!.price)}'
+                                : 'Tekan untuk memilih kurir',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.keyboard_arrow_right, color: Colors.black54, size: 20),
+                  ],
+                ),
+              ),
             ),
-          ],
-        );
-      },
+          ),
+
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Divider(height: 16, thickness: 1, color: Color(0xFFEEEEEE)),
+        ),
+      ],
     );
   }
 
-  void _openCourierSelector(String brand) {
+  void _openCourierSelector() {
     ScaffoldMessenger.of(context).clearSnackBars();
     const Color brandBrown = Color(0xFF8C7355);
     showModalBottomSheet(
@@ -509,7 +488,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pilih Pengiriman - ${brand.toUpperCase()}',
+                  'Pilih Pengiriman',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -523,12 +502,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   itemCount: _courierOptions.length,
                   itemBuilder: (context, index) {
                     final courier = _courierOptions[index];
-                    final isSelected = _selectedCouriers[brand]?.serviceName == courier.serviceName;
+                    final isSelected = _selectedCourier?.serviceName == courier.serviceName;
 
                     return GestureDetector(
                       onTap: () {
                         setState(() {
-                          _selectedCouriers[brand] = courier;
+                          _selectedCourier = courier;
                         });
                         Navigator.pop(context);
                       },
@@ -757,7 +736,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildPriceSection(bool hasAddress) {
-    final int totalItems = widget.checkoutItems.fold(0, (sum, item) => sum + item.quantity);
+    final int totalItems = widget.checkoutItem.quantity;
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -776,8 +755,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
           const SizedBox(height: 8),
           _buildPriceRow(
             'Pengiriman',
-            _selectedCouriers.isNotEmpty ? _formatVal(_shippingFee) : '-',
-            valueColor: _selectedCouriers.isNotEmpty ? Colors.black : Colors.grey,
+            _selectedCourier != null ? _formatVal(_shippingFee) : '-',
+            valueColor: _selectedCourier != null ? Colors.black : Colors.grey,
           ),
           if (hasAddress) ...[
             const SizedBox(height: 8),
@@ -813,7 +792,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildBottomPanel(Color brandBrown) {
-    final readyToPay = _address != null && _selectedCouriers.length == _groupedItems.length && _selectedPayment != null;
+    final readyToPay = _address != null && _selectedCourier != null && _selectedPayment != null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -876,17 +855,46 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  void _navigateToPayment() {
-    if (_address == null || _selectedCouriers.length != _groupedItems.length || _selectedPayment == null) return;
+  void _navigateToPayment() async {
+    if (_address == null || _selectedCourier == null || _selectedPayment == null) return;
 
     ScaffoldMessenger.of(context).clearSnackBars();
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF8C7355)),
+      ),
+    );
+
+    final result = await CheckoutManager().processSingleItemCheckout(
+      productId: widget.checkoutItem.product.id,
+      addressId: _address!.id ?? '', // We assume address has an ID from backend now
+      courierCode: _selectedCourier!.courierName.toLowerCase().split(' ')[0], // Simplistic mapping for now
+      service: _selectedCourier!.serviceName,
+    );
+
+    if (!mounted) return;
+    Navigator.pop(context); // Close loading dialog
+
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.message ?? 'Checkout gagal')),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentPage(
-          checkoutItems: widget.checkoutItems,
+          checkoutItem: widget.checkoutItem,
           totalPrice: _total,
           selectedPayment: _selectedPayment!,
+          snapUrl: result.snapUrl,
+          snapToken: result.snapToken,
         ),
       ),
     );
@@ -998,6 +1006,7 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  City? _selectedCity;
 
   @override
   void initState() {
@@ -1108,6 +1117,17 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
                               contentPadding: const EdgeInsets.symmetric(vertical: 4),
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          CityAutocompleteField(
+                            labelText: 'Kota Tujuan',
+                            hintText: 'Ketik nama kota, misal: Jakarta Selatan',
+                            initialValue: _selectedCity?.label,
+                            onSelected: (City city) {
+                              setState(() {
+                                _selectedCity = city;
+                              });
+                            },
+                          ),
                           const SizedBox(height: 8),
                           TextField(
                             controller: _addressController,
@@ -1178,6 +1198,8 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       fullAddress: _addressController.text.trim(),
+      cityId: _selectedCity?.id.toString(),
+      cityLabel: _selectedCity?.label,
     );
 
     Navigator.pop(context, address);

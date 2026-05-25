@@ -17,6 +17,14 @@ class _SellerProductsPageState extends State<SellerProductsPage> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ProductManager().fetchMyProducts();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -49,8 +57,8 @@ class _SellerProductsPageState extends State<SellerProductsPage> {
       body: ListenableBuilder(
         listenable: ProductManager(),
         builder: (context, child) {
-          // Fetch all products (includes user-created and seeded mock data).
-          final allProducts = ProductManager().products;
+          // Fetch seller's own products
+          final allProducts = ProductManager().myProducts;
           
           final filteredProducts = allProducts.where((product) {
             final titleMatch = product.title.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -255,11 +263,25 @@ class _SellerProductsPageState extends State<SellerProductsPage> {
                                       child: Stack(
                                         fit: StackFit.expand,
                                         children: [
-                                          Image.asset(
-                                            product.imageUrl,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                          ),
+                                          product.imageUrl.startsWith('http')
+                                            ? Image.network(
+                                                product.imageUrl,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Container(
+                                                  color: const Color(0xFFF3F3F3),
+                                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                                ),
+                                              )
+                                            : Image.asset(
+                                                product.imageUrl,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Container(
+                                                  color: const Color(0xFFF3F3F3),
+                                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                                ),
+                                              ),
                                           if (!product.isVerified)
                                             Positioned(
                                               top: 8,
