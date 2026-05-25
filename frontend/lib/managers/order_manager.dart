@@ -88,16 +88,25 @@ class OrderManager extends ChangeNotifier {
   factory OrderManager() => _instance;
 
   final List<OrderItem> _orders = [];
+  DateTime? _lastFetchTime;
 
   List<OrderItem> get orders => List.unmodifiable(_orders);
 
-  Future<void> fetchOrders() async {
+  Future<void> fetchOrders({bool force = false}) async {
+    if (!force && _orders.isNotEmpty && _lastFetchTime != null) {
+      final diff = DateTime.now().difference(_lastFetchTime!);
+      if (diff < const Duration(seconds: 30)) {
+        return;
+      }
+    }
+
     try {
       final response = await ApiClient().dio.get('/order/my-orders');
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['data'] ?? [];
         _orders.clear();
         _orders.addAll(data.map((json) => OrderItem.fromJson(json)).toList());
+        _lastFetchTime = DateTime.now();
         notifyListeners();
       }
     } on DioException catch (e) {
@@ -204,6 +213,7 @@ class OrderManager extends ChangeNotifier {
   }
 
   void addOrderFromCheckout(String orderId, List<CartItem> items) {
+    _lastFetchTime = null; // Clear cache
     for (var item in items) {
       _orders.insert(
         0, // Insert at the top of the history list
@@ -235,6 +245,12 @@ class OrderManager extends ChangeNotifier {
         );
       }
     }
+    notifyListeners();
+  }
+
+  void clearCache() {
+    _orders.clear();
+    _lastFetchTime = null;
     notifyListeners();
   }
 }

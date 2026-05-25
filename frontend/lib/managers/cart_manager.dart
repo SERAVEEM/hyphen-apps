@@ -46,6 +46,7 @@ class CartManager extends ChangeNotifier {
 
   List<CartItem> _items = [];
   bool _isLoading = false;
+  DateTime? _lastFetchCartTime;
 
   List<CartItem> get items => List.unmodifiable(_items);
   bool get isLoading => _isLoading;
@@ -58,7 +59,14 @@ class CartManager extends ChangeNotifier {
     return _items.fold(0, (sum, item) => sum + item.quantity);
   }
 
-  Future<void> fetchCart() async {
+  Future<void> fetchCart({bool force = false}) async {
+    if (!force && _items.isNotEmpty && _lastFetchCartTime != null) {
+      final diff = DateTime.now().difference(_lastFetchCartTime!);
+      if (diff < const Duration(seconds: 10)) {
+        return;
+      }
+    }
+
     _isLoading = true;
     notifyListeners();
 
@@ -67,6 +75,7 @@ class CartManager extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['data'] ?? [];
         _items = data.map((json) => CartItem.fromJson(json)).toList();
+        _lastFetchCartTime = DateTime.now();
       }
     } catch (e) {
       debugPrint('Error fetching cart: $e');
@@ -85,7 +94,7 @@ class CartManager extends ChangeNotifier {
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        await fetchCart();
+        await fetchCart(force: true);
         return null; // Success
       }
       return response.data['message'] ?? 'Failed to add to cart';
@@ -100,7 +109,7 @@ class CartManager extends ChangeNotifier {
     try {
       final response = await ApiClient().dio.delete('/cart/removefromcart/$productId/$size');
       if (response.statusCode == 200) {
-        await fetchCart();
+        await fetchCart(force: true);
       }
     } catch (e) {
       debugPrint('Error removing from cart: $e');
@@ -113,8 +122,6 @@ class CartManager extends ChangeNotifier {
       return;
     }
     // Note: If your backend supports updating quantity, call it here.
-    // For now, our backend /addcart only adds 1 and throws error if exists.
-    // Assuming backend doesn't support update, we just fetchCart or handle locally.
   }
 
   Future<void> clear() async {
@@ -122,10 +129,17 @@ class CartManager extends ChangeNotifier {
       final response = await ApiClient().dio.delete('/cart/clearcart');
       if (response.statusCode == 200) {
         _items.clear();
+        _lastFetchCartTime = null; // Clear cache
         notifyListeners();
       }
     } catch (e) {
       debugPrint('Error clearing cart: $e');
     }
+  }
+
+  void clearLocalCache() {
+    _items.clear();
+    _lastFetchCartTime = null;
+    notifyListeners();
   }
 }

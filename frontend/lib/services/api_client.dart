@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:hyphen/managers/auth_manager.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -40,10 +41,19 @@ class ApiClient {
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+        debugPrint('🌐 API Request: [${options.method}] ${options.path}');
         return handler.next(options);
       },
+      onResponse: (response, handler) {
+        debugPrint('🌐 API Response: [${response.statusCode}] ${response.requestOptions.path}');
+        return handler.next(response);
+      },
       onError: (DioException e, handler) async {
-        // Handle global errors, e.g. token expiration / refreshing
+        debugPrint('🌐 API Error: [${e.response?.statusCode}] ${e.requestOptions.path} - ${e.response?.data ?? e.message}');
+        if (e.response?.statusCode == 401) {
+          debugPrint('🌐 Session expired (401). Triggering auto-logout.');
+          AuthManager().logout();
+        }
         return handler.next(e);
       },
     ));

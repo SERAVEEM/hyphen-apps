@@ -236,5 +236,9 @@ class ChatManager extends ChangeNotifier {
       socket = null;
       print('⚡ Socket manually disconnected');
     }
+    _rooms.clear();
+    _messages.clear();
+    activeRoomId = null;
+    notifyListeners();
   }
 }

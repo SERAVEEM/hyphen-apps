@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hyphen/managers/product_manager.dart';
-import 'package:hyphen/data/mock_products.dart';
 import 'package:hyphen/widgets/photo_uploader_box.dart';
 import 'package:hyphen/widgets/selling_tips_box.dart';
 import 'package:hyphen/models/city.dart';
 import 'package:hyphen/widgets/city_autocomplete_field.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:hyphen/managers/auth_manager.dart';
+import 'package:hyphen/screens/login_page.dart';
 
 class SellPage extends StatefulWidget {
   final VoidCallback? onUploadSuccess;
@@ -388,160 +388,245 @@ class _SellPageState extends State<SellPage> {
               ],
             )
           : null,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            PhotoUploaderBox(
-              selectedImagePath: _selectedImagePath,
-              onTap: _showPhotoPicker,
+      body: ListenableBuilder(
+        listenable: AuthManager(),
+        builder: (context, child) {
+          final auth = AuthManager();
+          if (!auth.isLoggedIn) {
+            return _buildLoggedOutPlaceholder(context, brandBrown);
+          }
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PhotoUploaderBox(
+                  selectedImagePath: _selectedImagePath,
+                  onTap: _showPhotoPicker,
+                ),
+                const SizedBox(height: 24),
+
+                const SellingTipsBox(),
+                const SizedBox(height: 24),
+
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                    border: Border.all(color: const Color(0xFFF3F3F3)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildFormTextRow(
+                        label: 'Nama baju',
+                        hint: 'cth. Black Jeans',
+                        controller: _nameController,
+                      ),
+                      const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
+
+                      _buildFormTextRow(
+                        label: 'Description',
+                        hint: 'cth. Tidak ada kerusakan/noda, Ukuran M',
+                        controller: _descController,
+                        maxLines: 3,
+                      ),
+                      const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
+
+                      _buildFormSelectorRow(
+                        label: 'Kategori',
+                        value: _selectedCategory,
+                        onTap: _showCategoryPicker,
+                      ),
+                      const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
+
+                      _buildFormSelectorRow(
+                        label: 'Ukuran',
+                        value: _selectedSize,
+                        onTap: _showSizePicker,
+                      ),
+                      const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
+
+                      _buildFormSelectorRow(
+                        label: 'Kondisi',
+                        value: _selectedCondition,
+                        onTap: _showConditionPicker,
+                      ),
+                      const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
+
+                      _buildFormSelectorRow(
+                        label: 'Harga',
+                        value: _enteredPrice != null
+                            ? 'Rp ${_enteredPrice!.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}'
+                            : 'Pilih Harga',
+                        onTap: _showPriceInputDialog,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Info Pengiriman',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                CityAutocompleteField(
+                  onSelected: (City city) {
+                    setState(() {
+                      _selectedCity = city;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _weightController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Berat Barang (gram)',
+                    hintText: 'Contoh: 500 (untuk 500 gram)',
+                    hintStyle: GoogleFonts.plusJakartaSans(
+                      color: Colors.black38,
+                      fontSize: 14,
+                    ),
+                    labelStyle: GoogleFonts.plusJakartaSans(
+                      color: Colors.black54,
+                      fontSize: 14,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF6F6F6),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+                    suffixIcon: const Icon(Icons.scale_outlined, color: Colors.black26),
+                  ),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 40),
+
+                SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _isUploading ? null : _uploadProduct,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandBrown,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isUploading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            'Upload',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
-            const SizedBox(height: 24),
+          );
+        },
+      ),
+    );
+  }
 
-            const SellingTipsBox(),
-            const SizedBox(height: 24),
-
+  Widget _buildLoggedOutPlaceholder(BuildContext context, Color brandBrown) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             Container(
+              height: 90,
+              width: 90,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                color: const Color(0xFFF5F5F5),
+                shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-                border: Border.all(color: const Color(0xFFF3F3F3)),
-              ),
-              child: Column(
-                children: [
-                  _buildFormTextRow(
-                    label: 'Nama baju',
-                    hint: 'cth. Black Jeans',
-                    controller: _nameController,
-                  ),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
-
-                  _buildFormTextRow(
-                    label: 'Description',
-                    hint: 'cth. Tidak ada kerusakan/noda, Ukuran M',
-                    controller: _descController,
-                    maxLines: 3,
-                  ),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
-
-                  _buildFormSelectorRow(
-                    label: 'Kategori',
-                    value: _selectedCategory,
-                    onTap: _showCategoryPicker,
-                  ),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
-
-                  _buildFormSelectorRow(
-                    label: 'Ukuran',
-                    value: _selectedSize,
-                    onTap: _showSizePicker,
-                  ),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
-
-                  _buildFormSelectorRow(
-                    label: 'Kondisi',
-                    value: _selectedCondition,
-                    onTap: _showConditionPicker,
-                  ),
-                  const Divider(height: 1, thickness: 1, color: Color(0xFFF5F5F5)),
-
-                  _buildFormSelectorRow(
-                    label: 'Harga',
-                    value: _enteredPrice != null
-                        ? 'Rp ${_enteredPrice!.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}'
-                        : 'Pilih Harga',
-                    onTap: _showPriceInputDialog,
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
+              child: Icon(Icons.lock_outline, size: 40, color: brandBrown),
             ),
             const SizedBox(height: 24),
             Text(
-              'Info Pengiriman',
+              'Belum Masuk Akun',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
                 color: Colors.black,
               ),
             ),
-            const SizedBox(height: 12),
-            CityAutocompleteField(
-              onSelected: (City city) {
-                setState(() {
-                  _selectedCity = city;
+            const SizedBox(height: 8),
+            Text(
+              'Silakan login terlebih dahulu untuk menjual produk Anda di marketplace.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.black54,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                ).then((_) {
+                  setState(() {});
                 });
               },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _weightController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Berat Barang (gram)',
-                hintText: 'Contoh: 500 (untuk 500 gram)',
-                hintStyle: GoogleFonts.plusJakartaSans(
-                  color: Colors.black38,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                'Masuk Sekarang',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
-                labelStyle: GoogleFonts.plusJakartaSans(
-                  color: Colors.black54,
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF6F6F6),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.all(16),
-                suffixIcon: const Icon(Icons.scale_outlined, color: Colors.black26),
-              ),
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 40),
-
-            SizedBox(
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _isUploading ? null : _uploadProduct,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandBrown,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isUploading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : Text(
-                        'Upload',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
