@@ -9,13 +9,21 @@ class AddressManager extends ChangeNotifier {
   AddressManager._internal();
 
   List<Address> _addresses = [];
+  DateTime? _lastFetchTime;
   List<Address> get addresses => List.unmodifiable(_addresses);
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
   /// Fetch all addresses for the logged-in user
-  Future<void> fetchAddresses() async {
+  Future<void> fetchAddresses({bool force = false}) async {
+    if (!force && _addresses.isNotEmpty && _lastFetchTime != null) {
+      final diff = DateTime.now().difference(_lastFetchTime!);
+      if (diff < const Duration(seconds: 30)) {
+        return;
+      }
+    }
+
     _isLoading = true;
     notifyListeners();
 
@@ -24,6 +32,7 @@ class AddressManager extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['data'] ?? [];
         _addresses = data.map((json) => Address.fromJson(json)).toList();
+        _lastFetchTime = DateTime.now();
       }
     } catch (e) {
       debugPrint('Error fetching addresses: $e');
@@ -76,5 +85,11 @@ class AddressManager extends ChangeNotifier {
     } catch (e) {
       return e.toString();
     }
+  }
+
+  void clearCache() {
+    _addresses.clear();
+    _lastFetchTime = null;
+    notifyListeners();
   }
 }

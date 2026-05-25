@@ -10,6 +10,8 @@ class ProductManager extends ChangeNotifier {
 
   final List<Product> _products = [];
   final List<Product> _myProducts = [];
+  DateTime? _lastFetchProductsTime;
+  DateTime? _lastFetchMyProductsTime;
 
   List<Product> get products => List.unmodifiable(_products);
   List<Product> get myProducts => List.unmodifiable(_myProducts);
@@ -19,7 +21,14 @@ class ProductManager extends ChangeNotifier {
 
   ProductManager._internal();
 
-  Future<void> fetchProducts() async {
+  Future<void> fetchProducts({bool force = false}) async {
+    if (!force && _products.isNotEmpty && _lastFetchProductsTime != null) {
+      final diff = DateTime.now().difference(_lastFetchProductsTime!);
+      if (diff < const Duration(seconds: 30)) {
+        return;
+      }
+    }
+
     _isLoading = true;
     notifyListeners();
 
@@ -30,9 +39,10 @@ class ProductManager extends ChangeNotifier {
         final List<dynamic> data = response.data['data'];
         _products.clear();
         _products.addAll(data.map((json) => Product.fromJson(json)).toList());
+        _lastFetchProductsTime = DateTime.now();
       }
     } catch (e) {
-      print('Error fetching products: \$e');
+      print('Error fetching products: $e');
       if (_products.isEmpty) {
         _products.addAll(mockProducts);
       }
@@ -42,7 +52,14 @@ class ProductManager extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchMyProducts() async {
+  Future<void> fetchMyProducts({bool force = false}) async {
+    if (!force && _myProducts.isNotEmpty && _lastFetchMyProductsTime != null) {
+      final diff = DateTime.now().difference(_lastFetchMyProductsTime!);
+      if (diff < const Duration(seconds: 30)) {
+        return;
+      }
+    }
+
     _isLoading = true;
     notifyListeners();
 
@@ -53,9 +70,10 @@ class ProductManager extends ChangeNotifier {
         final List<dynamic> data = response.data['data'];
         _myProducts.clear();
         _myProducts.addAll(data.map((json) => Product.fromJson(json)).toList());
+        _lastFetchMyProductsTime = DateTime.now();
       }
     } catch (e) {
-      print('Error fetching my products: \$e');
+      print('Error fetching my products: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -138,6 +156,14 @@ class ProductManager extends ChangeNotifier {
   void deleteProduct(String id) {
     _products.removeWhere((p) => p.id == id);
     _myProducts.removeWhere((p) => p.id == id);
+    notifyListeners();
+  }
+
+  void clearCache() {
+    _products.clear();
+    _myProducts.clear();
+    _lastFetchProductsTime = null;
+    _lastFetchMyProductsTime = null;
     notifyListeners();
   }
 }

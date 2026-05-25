@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hyphen/managers/product_manager.dart';
 import 'package:hyphen/managers/order_manager.dart';
 import 'package:hyphen/managers/admin_manager.dart';
 import 'package:hyphen/managers/auth_manager.dart';
@@ -348,7 +347,7 @@ class _AdminPageState extends State<AdminPage> {
               _buildMetricCard(
                 title: 'Curated Products',
                 value: curatedCount,
-                subText: '\$pendingCount pending approval',
+                subText: '$pendingCount pending approval',
                 icon: Icons.check_circle_outline,
                 brandColor: brandColor,
               ),

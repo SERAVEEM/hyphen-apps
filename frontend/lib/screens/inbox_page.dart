@@ -65,24 +65,35 @@ class _InboxPageState extends State<InboxPage> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFAFBFD),
       body: SafeArea(
         child: Column(
           children: [
-            // Custom Segmented Header
+            // Custom Segmented Header (iOS / macOS Style Pill)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
               child: Container(
                 height: 48,
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF6F6F6),
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFEEEEEE),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: TabBar(
                   controller: _tabController,
+                  dividerColor: Colors.transparent,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorPadding: EdgeInsets.zero,
                   indicator: BoxDecoration(
                     color: Colors.black,
                     borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.black54,
@@ -120,106 +131,37 @@ class _InboxPageState extends State<InboxPage> with SingleTickerProviderStateMix
 
   Widget _buildChatsTab(BuildContext context) {
     const Color brandBrown = Color(0xFF8C7355);
-    final auth = AuthManager();
-
-    if (!auth.isLoggedIn) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                height: 80,
-                width: 80,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF6F6F6),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.lock_outline, size: 36, color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Belum Masuk Akun',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Silakan login terlebih dahulu untuk mengakses kotak masuk dan fitur pesan.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.black54,
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
-                  ).then((_) {
-                    setState(() {});
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'Masuk Sekarang',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return ListenableBuilder(
-      listenable: ChatManager(),
+      listenable: AuthManager(),
       builder: (context, child) {
-        final rooms = ChatManager().rooms;
+        final auth = AuthManager();
 
-        if (ChatManager().isLoadingRooms) {
-          return const Center(
-            child: CircularProgressIndicator(color: brandBrown),
-          );
-        }
-
-        if (rooms.isEmpty) {
+        if (!auth.isLoggedIn) {
           return Center(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    height: 80,
-                    width: 80,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF6F6F6),
+                    height: 90,
+                    width: 90,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.chat_bubble_outline, size: 36, color: Colors.grey),
+                    child: const Icon(Icons.lock_outline, size: 40, color: brandBrown),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Belum Ada Chat',
+                    'Belum Masuk Akun',
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
@@ -228,12 +170,39 @@ class _InboxPageState extends State<InboxPage> with SingleTickerProviderStateMix
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Anda belum memiliki obrolan aktif. Cari produk yang Anda minati lalu hubungi penjual!',
+                    'Silakan login terlebih dahulu untuk mengakses kotak masuk dan fitur pesan.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.black54,
                       fontSize: 13,
                       height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                      ).then((_) {
+                        setState(() {});
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Masuk Sekarang',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
@@ -242,134 +211,231 @@ class _InboxPageState extends State<InboxPage> with SingleTickerProviderStateMix
           );
         }
 
-        return ListView.separated(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(20),
-          itemCount: rooms.length,
-          separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F1F1)),
-          itemBuilder: (context, index) {
-            final room = rooms[index];
-            final String name = room['otherUsername'] ?? 'User';
-            final String lastMsg = room['lastMessage'] ?? 'Mulai percakapan baru';
-            final String timeStr = _formatTime(room['lastMessageAt'] ?? room['createdAt']);
-            final int unreadCount = room['unreadCount'] ?? 0;
-            final bool hasUnread = unreadCount > 0;
-            final String? photoUrl = room['otherPhotoUrl'];
+        return ListenableBuilder(
+          listenable: ChatManager(),
+          builder: (context, child) {
+            final rooms = ChatManager().rooms;
 
-            return InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatDetailPage(
-                      roomId: room['id'],
-                      name: name,
-                      avatarUrl: photoUrl,
-                      productName: room['productName'],
-                      productPrice: room['productPrice'] != null
-                          ? double.tryParse(room['productPrice'].toString())
-                          : null,
-                      productImageUrl: room['productImageUrl'],
-                    ),
-                  ),
-                ).then((_) {
-                  // Refresh rooms to reset unread count when returning
-                  ChatManager().fetchRooms();
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14.0),
-                child: Row(
-                  children: [
-                    // Avatar
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: const Color(0xFFF6F6F6),
-                      backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
-                          ? NetworkImage(photoUrl)
-                          : null,
-                      child: (photoUrl == null || photoUrl.isEmpty)
-                          ? Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: brandBrown,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
+            if (ChatManager().isLoadingRooms) {
+              return const Center(
+                child: CircularProgressIndicator(color: brandBrown),
+              );
+            }
 
-                    // Details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: hasUnread ? FontWeight.bold : FontWeight.w600,
-                              fontSize: 15,
-                              color: Colors.black,
+            if (rooms.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        height: 90,
+                        width: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            lastMsg,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: hasUnread ? Colors.black87 : Colors.black45,
-                              fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        child: const Icon(Icons.chat_bubble_outline, size: 40, color: brandBrown),
                       ),
-                    ),
-                    const SizedBox(width: 12),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Belum Ada Chat',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Anda belum memiliki obrolan aktif. Cari produk yang Anda minati lalu hubungi penjual!',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.black54,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
 
-                    // Time and Unread Dot
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          timeStr,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.black38,
-                            fontSize: 11,
+            return ListView.builder(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              itemCount: rooms.length,
+              itemBuilder: (context, index) {
+                final room = rooms[index];
+                final String name = room['otherUsername'] ?? 'User';
+                final String lastMsg = room['lastMessage'] ?? 'Mulai percakapan baru';
+                final String timeStr = _formatTime(room['lastMessageAt'] ?? room['createdAt']);
+                final int unreadCount = room['unreadCount'] ?? 0;
+                final bool hasUnread = unreadCount > 0;
+                final String? photoUrl = room['otherPhotoUrl'];
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.015),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                    border: Border.all(color: const Color(0xFFF1F3F7)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatDetailPage(
+                                roomId: room['id'],
+                                name: name,
+                                avatarUrl: photoUrl,
+                                productName: room['productName'],
+                                productPrice: room['productPrice'] != null
+                                    ? double.tryParse(room['productPrice'].toString())
+                                    : null,
+                                productImageUrl: room['productImageUrl'],
+                              ),
+                            ),
+                          ).then((_) {
+                            ChatManager().fetchRooms();
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                          child: Row(
+                            children: [
+                              // Avatar with Online dot status indicator
+                              Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 26,
+                                    backgroundColor: const Color(0xFFF6F6F6),
+                                    backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                                        ? NetworkImage(photoUrl)
+                                        : null,
+                                    child: (photoUrl == null || photoUrl.isEmpty)
+                                        ? Text(
+                                            name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              color: brandBrown,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    right: 1,
+                                    bottom: 1,
+                                    child: Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF4CAF50),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontWeight: hasUnread ? FontWeight.bold : FontWeight.w700,
+                                        fontSize: 15,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      lastMsg,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: hasUnread ? Colors.black87 : Colors.black45,
+                                        fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Time and Unread Dot
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    timeStr,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.black38,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (hasUnread)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: brandBrown,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 18,
+                                        minHeight: 18,
+                                      ),
+                                      child: Text(
+                                        '$unreadCount',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    )
+                                  else
+                                    const SizedBox(height: 18),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        if (hasUnread)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: brandBrown,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Text(
-                              '$unreadCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          )
-                        else
-                          const SizedBox(height: 16),
-                      ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -409,17 +475,29 @@ class _InboxPageState extends State<InboxPage> with SingleTickerProviderStateMix
       },
     ];
 
-    return ListView.separated(
+    return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       itemCount: mockNotifications.length,
-      separatorBuilder: (context, index) => const Divider(height: 1, color: Color(0xFFF1F1F1)),
       itemBuilder: (context, index) {
         final notif = mockNotifications[index];
         const Color brandBrown = Color(0xFF8C7355);
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14.0),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.015),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFFF1F3F7)),
+          ),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -451,7 +529,7 @@ class _InboxPageState extends State<InboxPage> with SingleTickerProviderStateMix
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       notif['body'],
                       style: GoogleFonts.plusJakartaSans(
@@ -460,7 +538,7 @@ class _InboxPageState extends State<InboxPage> with SingleTickerProviderStateMix
                         height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       notif['time'],
                       style: GoogleFonts.plusJakartaSans(
@@ -563,7 +641,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     const Color brandBrown = Color(0xFF8C7355);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5F6F9),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -619,25 +697,32 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       ),
       body: Column(
         children: [
-          // Premium Product Info Bar
+          // Premium Product Info Bar (Floating card design)
           if (widget.productName != null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9F9F9),
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.withOpacity(0.15)),
-                ),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+                border: Border.all(color: const Color(0xFFEAEAEA)),
               ),
               child: Row(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                     child: widget.productImageUrl != null && widget.productImageUrl!.isNotEmpty
                         ? (widget.productImageUrl!.startsWith('http')
-                            ? Image.network(widget.productImageUrl!, width: 44, height: 44, fit: BoxFit.cover)
-                            : Image.asset(widget.productImageUrl!, width: 44, height: 44, fit: BoxFit.cover))
-                        : Container(width: 44, height: 44, color: Colors.grey[200]),
+                            ? Image.network(widget.productImageUrl!, width: 40, height: 40, fit: BoxFit.cover)
+                            : Image.asset(widget.productImageUrl!, width: 40, height: 40, fit: BoxFit.cover))
+                        : Container(width: 40, height: 40, color: Colors.grey[200]),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -654,7 +739,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                             color: Colors.black,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           widget.productPrice != null ? _formatRupiah(widget.productPrice!) : '',
                           style: GoogleFonts.plusJakartaSans(
@@ -726,7 +811,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(
-                top: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                top: BorderSide(color: Colors.grey.withOpacity(0.15)),
               ),
             ),
             child: SafeArea(
@@ -746,7 +831,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF6F6F6),
+                        color: const Color(0xFFF4F5F7),
                         borderRadius: BorderRadius.circular(24),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -799,13 +884,23 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             constraints: const BoxConstraints(maxWidth: 260),
             decoration: BoxDecoration(
-              color: isMe ? brandBrown : const Color(0xFFF1F1F1),
+              color: isMe ? brandBrown : Colors.white,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isMe ? 16 : 0),
-                bottomRight: Radius.circular(isMe ? 0 : 16),
+                bottomLeft: Radius.circular(isMe ? 16 : 4),
+                bottomRight: Radius.circular(isMe ? 4 : 16),
               ),
+              boxShadow: isMe
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+              border: isMe ? null : Border.all(color: const Color(0xFFECECEC)),
             ),
             child: Text(
               text,
@@ -817,7 +912,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
             child: Text(
               time,
               style: GoogleFonts.plusJakartaSans(
@@ -826,7 +921,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
         ],
       ),
     );

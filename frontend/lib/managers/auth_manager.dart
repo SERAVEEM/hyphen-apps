@@ -4,6 +4,12 @@ import 'package:dio/dio.dart';
 import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
+import 'package:hyphen/managers/chat_manager.dart';
+import 'package:hyphen/managers/product_manager.dart';
+import 'package:hyphen/managers/address_manager.dart';
+import 'package:hyphen/managers/order_manager.dart';
+import 'package:hyphen/managers/cart_manager.dart';
+import 'package:hyphen/managers/admin_manager.dart';
 
 class AuthManager extends ChangeNotifier {
   // Singleton pattern
@@ -258,6 +264,12 @@ class AuthManager extends ChangeNotifier {
     _dob = '';
     _location = '';
     _photoUrl = '';
+    ChatManager().disconnectSocket();
+    ProductManager().clearCache();
+    AddressManager().clearCache();
+    OrderManager().clearCache();
+    CartManager().clearLocalCache();
+    AdminManager().clearCache();
     await ApiClient().clearToken();
     notifyListeners();
   }

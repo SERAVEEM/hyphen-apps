@@ -9,6 +9,9 @@ class ShippingManager extends ChangeNotifier {
   factory ShippingManager() => _instance;
   ShippingManager._internal();
 
+  final Map<String, List<Map<String, dynamic>>> _shippingCache = {};
+  final Map<String, DateTime> _shippingCacheTime = {};
+
   /// Fetches cities matching the query — tries RajaOngkir API first,
   /// falls back to local bundled data if the API is unavailable.
   Future<List<City>> searchCities(String query) async {
@@ -36,13 +39,25 @@ class ShippingManager extends ChangeNotifier {
       return searchLocalCities(query);
     }
   }
-  /// Fetches shipping costs from RajaOngkir
+
+  /// Fetches shipping costs from RajaOngkir with caching support
   Future<List<Map<String, dynamic>>> calculateShipping({
     required String originCityId,
     required String destinationCityId,
     required int weightGram,
     String? courier,
+    bool force = false,
   }) async {
+    final cacheKey = '${originCityId}_${destinationCityId}_${weightGram}_${courier ?? "all"}';
+
+    if (!force && _shippingCache.containsKey(cacheKey) && _shippingCacheTime.containsKey(cacheKey)) {
+      final cacheTime = _shippingCacheTime[cacheKey]!;
+      if (DateTime.now().difference(cacheTime) < const Duration(seconds: 30)) {
+        debugPrint('🚚 Using cached shipping costs for key: $cacheKey');
+        return _shippingCache[cacheKey]!;
+      }
+    }
+
     try {
       final response = await ApiClient().dio.post(
         '/shipping/cost',
@@ -56,7 +71,13 @@ class ShippingManager extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['data'] ?? [];
-        return data.cast<Map<String, dynamic>>();
+        final list = data.cast<Map<String, dynamic>>();
+
+        // Store in cache
+        _shippingCache[cacheKey] = list;
+        _shippingCacheTime[cacheKey] = DateTime.now();
+
+        return list;
       }
       return [];
     } on dio.DioException catch (e) {

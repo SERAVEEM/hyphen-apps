@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hyphen/services/api_client.dart';
 import 'package:hyphen/models/product_model.dart';
-import 'package:hyphen/managers/product_manager.dart';
 import 'package:dio/dio.dart';
 
 class AdminDashboardStats {
@@ -112,5 +111,11 @@ class AdminManager extends ChangeNotifier {
       }
       return 'Error: $e';
     }
+  }
+
+  void clearCache() {
+    _stats = null;
+    _pendingProducts.clear();
+    notifyListeners();
   }
 }
