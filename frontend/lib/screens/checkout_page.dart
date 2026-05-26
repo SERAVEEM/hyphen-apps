@@ -6,6 +6,7 @@ import 'package:hyphen/models/city.dart';
 import 'package:hyphen/widgets/city_autocomplete_field.dart';
 import 'package:hyphen/screens/payment_page.dart';
 import 'package:hyphen/managers/address_manager.dart';
+import 'package:hyphen/helpers/notification_helper.dart';
 
 // Address model
 class AddressInfo {
@@ -68,9 +69,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   // Mock list of courier options (RajaOngkir preparation)
   final List<CourierOption> _courierOptions = [
-    CourierOption(courierName: 'JNE Express', serviceName: 'JNE Oke', price: 12000.0, etd: '3-4'),
-    CourierOption(courierName: 'JNE Express', serviceName: 'JNE Reguler', price: 18000.0, etd: '2-3'),
-    CourierOption(courierName: 'JNE Express', serviceName: 'JNE YES', price: 28000.0, etd: '1'),
+    CourierOption(courierName: 'JNE', serviceName: 'OKE', price: 12000.0, etd: '3-4'),
+    CourierOption(courierName: 'JNE', serviceName: 'REG', price: 18000.0, etd: '2-3'),
+    CourierOption(courierName: 'JNE', serviceName: 'YES', price: 28000.0, etd: '1'),
   ];
 
   // Calculate pricing summary
@@ -900,8 +901,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
     Navigator.pop(context); // Close loading dialog
 
     if (!result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message ?? 'Checkout gagal')),
+      SnackBarHelper.show(
+        context,
+        result.message ?? 'Checkout gagal',
+        title: 'Checkout Gagal',
+        isError: true,
       );
       return;
     }
@@ -1205,11 +1209,11 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
     if (_nameController.text.trim().isEmpty ||
         _phoneController.text.trim().isEmpty ||
         _addressController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text('Harap lengkapi semua input data pengisian.'),
-        ),
+      SnackBarHelper.show(
+        context,
+        'Harap lengkapi semua input data pengisian.',
+        title: 'Formulir Belum Lengkap',
+        isError: true,
       );
       return;
     }
@@ -1240,8 +1244,11 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
     Navigator.pop(context); // Close loading dialog
 
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menyimpan alamat: $error')),
+      SnackBarHelper.show(
+        context,
+        'Gagal menyimpan alamat: $error',
+        title: 'Penyimpanan Gagal',
+        isError: true,
       );
       return;
     }

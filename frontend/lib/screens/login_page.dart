@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hyphen/managers/auth_manager.dart';
 import 'package:hyphen/screens/register_page.dart';
 import 'package:hyphen/screens/reset_password_page.dart';
+import 'package:hyphen/helpers/notification_helper.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,21 +44,18 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Selamat datang kembali, ${AuthManager().userName}!'),
-            backgroundColor: const Color(0xFF8C7355),
-            duration: const Duration(seconds: 2),
-          ),
+        SnackBarHelper.show(
+          context,
+          'Selamat datang kembali, ${AuthManager().userName}!',
+          title: 'Login Berhasil',
         );
         Navigator.pop(context); // Go back to where we came from
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login gagal. Periksa kembali email dan password Anda.'),
-            backgroundColor: Colors.redAccent,
-            duration: Duration(seconds: 2),
-          ),
+        SnackBarHelper.show(
+          context,
+          'Login gagal. Periksa kembali email dan password Anda.',
+          title: 'Login Gagal',
+          isError: true,
         );
       }
     }
@@ -315,8 +313,10 @@ class _LoginPageState extends State<LoginPage> {
                           label: 'Apple',
                           onTap: () {
                             // Mock Apple Sign In
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Apple Sign In is mocked')),
+                            SnackBarHelper.show(
+                              context,
+                              'Apple Sign In is mocked',
+                              title: 'Informasi',
                             );
                           },
                         ),
@@ -463,21 +463,18 @@ class _LoginPageState extends State<LoginPage> {
                             Navigator.pop(context); // Close dialog
 
                             if (success) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Selamat datang, ${AuthManager().userName}!'),
-                                  backgroundColor: const Color(0xFF8C7355),
-                                  duration: const Duration(seconds: 2),
-                                ),
+                              SnackBarHelper.show(
+                                context,
+                                'Selamat datang, ${AuthManager().userName}!',
+                                title: 'Login Berhasil',
                               );
                               Navigator.pop(context); // Go back to screen below login
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Google Sign In failed.'),
-                                  backgroundColor: Colors.redAccent,
-                                  duration: Duration(seconds: 2),
-                                ),
+                              SnackBarHelper.show(
+                                context,
+                                'Google Sign In failed.',
+                                title: 'Login Gagal',
+                                isError: true,
                               );
                             }
                           }
