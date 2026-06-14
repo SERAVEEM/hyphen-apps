@@ -2,7 +2,9 @@
 require('dotenv').config();
 require('module-alias/register');
 const { initAdmin } = require('@/data/users.data');
-initAdmin();
+initAdmin().catch(err => {
+    console.error('Failed to initialize admin user:', err.message);
+});
 
 const express = require('express');
 const http = require('http');
