@@ -146,8 +146,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal Server Error' });
 });
 
-const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
+// Mengambil port otomatis dari Railway, atau fallback ke 3000 saat di lokal
+const PORT = process.env.PORT || 3000;
+
+// Wajib tambahkan '0.0.0.0' agar server merespons jaringan luar
+server.listen(PORT, '0.0.0.0', () => {
   console.log(` Server running successfully
 Environment : ${process.env.NODE_ENV || 'development'}
 Server URL  : http://localhost:${PORT}/api/v1
