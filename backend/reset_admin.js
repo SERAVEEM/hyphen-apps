@@ -1,16 +1,9 @@
 require('dotenv').config();
-const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
+const pool = require('./src/config/db');
 
 async function resetAdmin() {
   try {
-    const pool = mysql.createPool({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'hypen_db',
-    });
-
     const newPassword = 'admin123'; // We will set it to exactly "admin123" to satisfy frontend length checks
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
