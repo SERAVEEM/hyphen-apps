@@ -4,10 +4,13 @@ const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-    if (allowed.includes(file.mimetype)) {
+    const mime = file.mimetype;
+    const originalName = file.originalname || '';
+    if (allowed.includes(mime) ||
+        (mime === 'application/octet-stream' && /\.(jpe?g|png|webp)$/i.test(originalName))) {
         cb(null, true);
     } else {
-        cb(new Error('Format file tidak didukung. Gunakan JPG, PNG, atau WEBP'), false);
+        cb(new Error(`Format file tidak didukung: ${mime}. Gunakan JPG, PNG, atau WEBP`), false);
     }
 };
 

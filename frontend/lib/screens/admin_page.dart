@@ -4,6 +4,7 @@ import 'package:hyphen/managers/order_manager.dart';
 import 'package:hyphen/managers/admin_manager.dart';
 import 'package:hyphen/managers/auth_manager.dart';
 import 'package:hyphen/data/mock_products.dart';
+import 'package:hyphen/screens/home_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -236,14 +237,12 @@ class _AdminPageState extends State<AdminPage> {
     return GestureDetector(
       onTap: () async {
         Navigator.pop(context); // Close drawer
-        Navigator.pop(context); // Exit Admin Portal
         await AuthManager().logout();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Logged out successfully'),
-              duration: Duration(milliseconds: 1000),
-            ),
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+            (route) => false,
           );
         }
       },

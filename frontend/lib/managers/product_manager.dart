@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hyphen/data/mock_products.dart';
 import 'package:hyphen/services/api_client.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:http_parser/http_parser.dart';
 
 class ProductManager extends ChangeNotifier {
   // Singleton instance
@@ -99,7 +100,11 @@ class ProductManager extends ChangeNotifier {
       if (conditionLabel == 'Cukup Baik') backendCondition = 'fair';
 
       // Create MultipartFile and force a .jpg extension so the backend multer accepts the mimetype
-      final file = await dio.MultipartFile.fromFile(imagePath, filename: 'upload.jpg');
+      final file = await dio.MultipartFile.fromFile(
+        imagePath,
+        filename: 'upload.jpg',
+        contentType: MediaType('image', 'jpeg'),
+      );
 
       final formData = dio.FormData.fromMap({
         'name': name,
@@ -127,11 +132,15 @@ class ProductManager extends ChangeNotifier {
       return 'Gagal upload produk';
     } on dio.DioException catch (e) {
       if (e.response != null && e.response?.data != null) {
-        return e.response!.data['message']?.toString() ?? 'Gagal upload produk';
+        final data = e.response!.data;
+        if (data is Map) {
+          return (data['error'] ?? data['message'] ?? 'Gagal upload produk').toString();
+        }
+        return 'Gagal upload produk';
       }
       return 'Gagal terhubung ke server';
     } catch (e) {
-      return 'Terjadi kesalahan: \$e';
+      return 'Terjadi kesalahan: $e';
     }
   }
 

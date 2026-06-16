@@ -151,7 +151,10 @@ app.use('/api/v1/admin', adminRoutes);
 //==== global error handler ====
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Internal Server Error' });
+  if (err.name === 'MulterError' || (err.message && err.message.includes('Format file tidak didukung'))) {
+    return res.status(400).json({ message: err.message });
+  }
+  res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 
 // Mengambil port otomatis dari Railway, atau fallback ke 3000 saat di lokal

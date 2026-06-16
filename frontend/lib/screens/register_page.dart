@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hyphen/managers/auth_manager.dart';
 import 'package:hyphen/screens/login_page.dart';
 import 'package:hyphen/screens/otp_verification_page.dart';
+import 'package:hyphen/screens/admin_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -500,7 +501,15 @@ class _RegisterPageState extends State<RegisterPage> {
                                   duration: const Duration(seconds: 2),
                                 ),
                               );
-                              Navigator.pop(context); // Go back to screen below register/login
+                              if (AuthManager().role == 'admin') {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const AdminPage()),
+                                  (route) => false,
+                                );
+                              } else {
+                                Navigator.pop(context); // Go back to screen below register/login
+                              }
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

@@ -4,6 +4,7 @@ import 'package:hyphen/managers/auth_manager.dart';
 import 'package:hyphen/screens/register_page.dart';
 import 'package:hyphen/screens/reset_password_page.dart';
 import 'package:hyphen/helpers/notification_helper.dart';
+import 'package:hyphen/screens/admin_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -49,7 +50,15 @@ class _LoginPageState extends State<LoginPage> {
           'Selamat datang kembali, ${AuthManager().userName}!',
           title: 'Login Berhasil',
         );
-        Navigator.pop(context); // Go back to where we came from
+        if (AuthManager().role == 'admin') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminPage()),
+            (route) => false,
+          );
+        } else {
+          Navigator.pop(context); // Go back to where we came from
+        }
       } else {
         SnackBarHelper.show(
           context,
@@ -468,7 +477,15 @@ class _LoginPageState extends State<LoginPage> {
                                 'Selamat datang, ${AuthManager().userName}!',
                                 title: 'Login Berhasil',
                               );
-                              Navigator.pop(context); // Go back to screen below login
+                              if (AuthManager().role == 'admin') {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const AdminPage()),
+                                  (route) => false,
+                                );
+                              } else {
+                                Navigator.pop(context); // Go back to screen below login
+                              }
                             } else {
                               SnackBarHelper.show(
                                 context,

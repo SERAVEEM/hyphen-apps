@@ -30,9 +30,17 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     // Fetch real products and check login status when Home Page loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ProductManager().fetchProducts();
-      AuthManager().checkAuthStatus();
+      final isLoggedIn = await AuthManager().checkAuthStatus();
+      if (isLoggedIn && AuthManager().role == 'admin') {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminPage()),
+          );
+        }
+      }
     });
   }
 

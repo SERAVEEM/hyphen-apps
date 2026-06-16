@@ -26,6 +26,7 @@ class AuthManager extends ChangeNotifier {
   String _dob = '';
   String _location = '';
   String _photoUrl = '';
+  String _role = 'user';
 
   bool get isLoggedIn => _isLoggedIn;
   String get userId => _userId;
@@ -36,6 +37,7 @@ class AuthManager extends ChangeNotifier {
   String get dob => _dob;
   String get location => _location;
   String get photoUrl => _photoUrl;
+  String get role => _role;
 
   Future<bool> checkAuthStatus() async {
     final token = await ApiClient().secureStorage.read(key: 'accessToken');
@@ -61,6 +63,7 @@ class AuthManager extends ChangeNotifier {
         _dob = data['dateOfBirth'] ?? '';
         _location = data['location'] ?? '';
         _photoUrl = data['photoUrl'] ?? '';
+        _role = data['role'] ?? 'user';
         notifyListeners();
       }
     } catch (e) {
@@ -294,6 +297,7 @@ class AuthManager extends ChangeNotifier {
     _dob = '';
     _location = '';
     _photoUrl = '';
+    _role = 'user';
     ChatManager().disconnectSocket();
     ProductManager().clearCache();
     AddressManager().clearCache();
