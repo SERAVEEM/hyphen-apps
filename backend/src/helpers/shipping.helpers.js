@@ -2,7 +2,7 @@ const axios = require('axios');
 const qs = require('qs');
 
 const RAJAONGKIR_API_KEY  = process.env.RAJAONGKIR_API_KEY;
-const RAJAONGKIR_BASE_URL = process.env.RAJAONGKIR_BASE_URL;
+const RAJAONGKIR_BASE_URL = process.env.RAJAONGKIR_BASE_URL || 'https://rajaongkir.komerce.id/api/v1';
 
 const MOCK_CITIES = [
     { id: '36', label: 'Jakarta Barat, DKI Jakarta', province_name: 'DKI Jakarta', city_name: 'Jakarta Barat', district_name: 'Grogol', zip_code: '11450' },

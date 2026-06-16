@@ -70,6 +70,44 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final success = await AuthManager().loginWithGoogle();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (success) {
+      SnackBarHelper.show(
+        context,
+        'Selamat datang kembali, ${AuthManager().userName}!',
+        title: 'Login Berhasil',
+      );
+      if (AuthManager().role == 'admin') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminPage()),
+          (route) => false,
+        );
+      } else {
+        Navigator.pop(context); // Go back to where we came from
+      }
+    } else {
+      SnackBarHelper.show(
+        context,
+        'Google Sign In gagal atau dibatalkan.',
+        title: 'Login Gagal',
+        isError: true,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const Color brandBrown = Color(0xFF8C7355);
@@ -305,14 +343,14 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Social Mocks (Google & Apple)
+                  // Social Login (Google & Apple)
                   Row(
                     children: [
                       Expanded(
                         child: _buildSocialButton(
                           icon: Icons.g_mobiledata_rounded,
                           label: 'Google',
-                          onTap: _showGoogleMockLoginDialog,
+                          onTap: _isLoading ? () {} : _handleGoogleSignIn,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -372,158 +410,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _showGoogleMockLoginDialog() {
-    final emailController = TextEditingController(text: 'google_tester@gmail.com');
-    final dialogFormKey = GlobalKey<FormState>();
-    bool isDialogLoading = false;
 
-    showDialog(
-      context: context,
-      barrierDismissible: !isDialogLoading,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Colors.grey[950],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: Colors.white.withOpacity(0.1)),
-              ),
-              title: Text(
-                'Google Sign In (Mock)',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              content: Form(
-                key: dialogFormKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Enter your Google email to simulate OAuth registration or login:',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'name@example.com',
-                        hintStyle: GoogleFonts.plusJakartaSans(color: Colors.white30, fontSize: 14),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.05),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF8C7355), width: 1.5),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Email is required';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
-                          return 'Enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isDialogLoading ? null : () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white60),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: isDialogLoading
-                      ? null
-                      : () async {
-                          if (dialogFormKey.currentState!.validate()) {
-                            setDialogState(() {
-                              isDialogLoading = true;
-                            });
-
-                            final email = emailController.text.trim();
-                            final success = await AuthManager().loginWithGoogle(email);
-
-                            if (!mounted) return;
-
-                            setDialogState(() {
-                              isDialogLoading = false;
-                            });
-
-                            Navigator.pop(context); // Close dialog
-
-                            if (success) {
-                              SnackBarHelper.show(
-                                context,
-                                'Selamat datang, ${AuthManager().userName}!',
-                                title: 'Login Berhasil',
-                              );
-                              if (AuthManager().role == 'admin') {
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const AdminPage()),
-                                  (route) => false,
-                                );
-                              } else {
-                                Navigator.pop(context); // Go back to screen below login
-                              }
-                            } else {
-                              SnackBarHelper.show(
-                                context,
-                                'Google Sign In failed.',
-                                title: 'Login Gagal',
-                                isError: true,
-                              );
-                            }
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8C7355),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: isDialogLoading
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Submit',
-                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
-                        ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   Widget _buildSocialButton({
     required IconData icon,

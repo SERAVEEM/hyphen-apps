@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hyphen/managers/chat_manager.dart';
 import 'package:hyphen/managers/product_manager.dart';
 import 'package:hyphen/managers/address_manager.dart';
@@ -16,6 +17,11 @@ class AuthManager extends ChangeNotifier {
   static final AuthManager _instance = AuthManager._internal();
   factory AuthManager() => _instance;
   AuthManager._internal();
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '373082828069-m9ldvb23gptu3l5plda4h82ffoovphc4.apps.googleusercontent.com',
+    scopes: ['email', 'profile'],
+  );
 
   bool _isLoggedIn = false;
   String _userId = '';
@@ -194,10 +200,23 @@ class AuthManager extends ChangeNotifier {
     return false;
   }
 
-  Future<bool> loginWithGoogle(String emailInput) async {
+  Future<bool> loginWithGoogle() async {
     try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        return false; // User cancelled
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        print('Error: Google Sign-In returned a null ID Token.');
+        return false;
+      }
+
       final response = await ApiClient().dio.post('/auth/google-signin', data: {
-        'idToken': 'mock_$emailInput',
+        'idToken': idToken,
       });
 
       if (response.statusCode == 200) {
@@ -305,6 +324,11 @@ class AuthManager extends ChangeNotifier {
     CartManager().clearLocalCache();
     AdminManager().clearCache();
     await ApiClient().clearToken();
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      print('Google signOut error: $e');
+    }
     ProductManager().fetchProducts(force: true);
     notifyListeners();
   }

@@ -46,7 +46,7 @@ const register = async (req, res) => {
             [email, otp, otpExpiry]
         );
 
-        await sendOTPEmail(
+        sendOTPEmail(
             email,
             otp,
             'Verifikasi Email Anda',
@@ -149,7 +149,7 @@ const resendOTP = async (req, res) => {
             [email, otp, otpExpiry]
         );
 
-        await sendOTPEmail(
+        sendOTPEmail(
             email,
             otp,
             'Kode OTP Baru',
@@ -266,7 +266,7 @@ const forgotPassword = async (req, res) => {
             [email, otp, otpExpiry]
         );
 
-        await sendOTPEmail(
+        sendOTPEmail(
             email,
             otp,
             'Reset Password',
