@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hyphen/managers/auth_manager.dart';
+import 'package:hyphen/helpers/notification_helper.dart';
 
 class ResetPasswordStep1Page extends StatefulWidget {
   const ResetPasswordStep1Page({super.key});
@@ -19,20 +21,27 @@ class _ResetPasswordStep1PageState extends State<ResetPasswordStep1Page> {
     super.dispose();
   }
 
-  void _handleSendCode() {
+  void _handleSendCode() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // Simulate sending OTP code
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
+      final String? errorMsg = await AuthManager().requestPasswordReset(
+        _emailController.text.trim(),
+      );
 
-        // Navigate to Step 2
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (errorMsg == null) {
+        SnackBarHelper.show(
+          context,
+          'Kode OTP reset password telah dikirim ke email Anda.',
+          title: 'OTP Terkirim',
+        );
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -41,7 +50,14 @@ class _ResetPasswordStep1PageState extends State<ResetPasswordStep1Page> {
             ),
           ),
         );
-      });
+      } else {
+        SnackBarHelper.show(
+          context,
+          errorMsg,
+          title: 'Gagal Mengirim OTP',
+          isError: true,
+        );
+      }
     }
   }
 
@@ -207,8 +223,8 @@ class ResetPasswordStep2Page extends StatefulWidget {
 
 class _ResetPasswordStep2PageState extends State<ResetPasswordStep2Page> {
   final _formKey = GlobalKey<FormState>();
-  final _otpControllers = List.generate(4, (_) => TextEditingController());
-  final _otpFocusNodes = List.generate(4, (_) => FocusNode());
+  final _otpControllers = List.generate(6, (_) => TextEditingController());
+  final _otpFocusNodes = List.generate(6, (_) => FocusNode());
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   
@@ -229,7 +245,7 @@ class _ResetPasswordStep2PageState extends State<ResetPasswordStep2Page> {
     super.dispose();
   }
 
-  void _handleResetPassword() {
+  void _handleResetPassword() async {
     // Validate OTP entries
     bool otpValid = true;
     for (var controller in _otpControllers) {
@@ -240,11 +256,11 @@ class _ResetPasswordStep2PageState extends State<ResetPasswordStep2Page> {
     }
 
     if (!otpValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill out the full 4-digit code.'),
-          backgroundColor: Colors.redAccent,
-        ),
+      SnackBarHelper.show(
+        context,
+        'Mohon masukkan 6 digit kode OTP secara lengkap.',
+        title: 'OTP Belum Lengkap',
+        isError: true,
       );
       return;
     }
@@ -254,16 +270,29 @@ class _ResetPasswordStep2PageState extends State<ResetPasswordStep2Page> {
         _isLoading = true;
       });
 
-      // Simulate API call to reset password
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
+      final String otp = _otpControllers.map((c) => c.text).join();
+      final String? errorMsg = await AuthManager().confirmPasswordReset(
+        widget.email,
+        otp,
+        _passwordController.text,
+      );
 
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (errorMsg == null) {
         // Show elegant success dialog
         _showSuccessDialog();
-      });
+      } else {
+        SnackBarHelper.show(
+          context,
+          errorMsg,
+          title: 'Gagal Mengubah Password',
+          isError: true,
+        );
+      }
     }
   }
 
@@ -396,9 +425,9 @@ class _ResetPasswordStep2PageState extends State<ResetPasswordStep2Page> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Center(
+                   Center(
                     child: Text(
-                      'Please enter the 4-digit code sent to\n${widget.email}',
+                      'Please enter the 6-digit code sent to\n${widget.email}',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.white70,
@@ -409,13 +438,13 @@ class _ResetPasswordStep2PageState extends State<ResetPasswordStep2Page> {
                   ),
                   const SizedBox(height: 36),
 
-                  // 4-Digit Code Fields
+                  // 6-Digit Code Fields
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(4, (index) {
+                    children: List.generate(6, (index) {
                       return SizedBox(
-                        width: 56,
-                        height: 64,
+                        width: 44,
+                        height: 56,
                         child: TextFormField(
                           controller: _otpControllers[index],
                           focusNode: _otpFocusNodes[index],
@@ -423,7 +452,7 @@ class _ResetPasswordStep2PageState extends State<ResetPasswordStep2Page> {
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
-                            fontSize: 24,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                           maxLength: 1,
@@ -442,7 +471,7 @@ class _ResetPasswordStep2PageState extends State<ResetPasswordStep2Page> {
                           ),
                           onChanged: (value) {
                             if (value.isNotEmpty) {
-                              if (index < 3) {
+                              if (index < 5) {
                                 _otpFocusNodes[index + 1].requestFocus();
                               } else {
                                 _otpFocusNodes[index].unfocus();

@@ -1,4 +1,4 @@
-package com.example.hyphen
+package com.example.hypen
 
 import io.flutter.embedding.android.FlutterActivity
 

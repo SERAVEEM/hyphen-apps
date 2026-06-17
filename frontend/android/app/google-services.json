@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "269764707790",
+    "project_id": "hypen-app-590bb",
+    "storage_bucket": "hypen-app-590bb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:269764707790:android:6e403e081218702ae7979f",
+        "android_client_info": {
+          "package_name": "com.example.hypen"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "269764707790-gh049mq973djjg49hoeqtd3i7ttnit0o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.hypen",
+            "certificate_hash": "369da9adebbcf071af16ae71c9620859c6840568"
+          }
+        },
+        {
+          "client_id": "269764707790-jjq21tgqgpfjcn9u0i8lkeaarhjp4u0m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3bgliYs7yEfiQbfKZQr1aVFF0ubv_vYc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "269764707790-jjq21tgqgpfjcn9u0i8lkeaarhjp4u0m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

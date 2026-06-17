@@ -19,7 +19,7 @@ class AuthManager extends ChangeNotifier {
   AuthManager._internal();
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: '373082828069-m9ldvb23gptu3l5plda4h82ffoovphc4.apps.googleusercontent.com',
+    serverClientId: '269764707790-jjq21tgqgpfjcn9u0i8lkeaarhjp4u0m.apps.googleusercontent.com',
     scopes: ['email', 'profile'],
   );
 
@@ -304,6 +304,48 @@ class AuthManager extends ChangeNotifier {
       return 'Terjadi kesalahan tidak terduga';
     }
     return 'Gagal mengirim ulang OTP';
+  }
+
+  Future<String?> requestPasswordReset(String emailInput) async {
+    try {
+      final response = await ApiClient().dio.post('/auth/forgot-password', data: {
+        'email': emailInput,
+      });
+
+      if (response.statusCode == 200) {
+        return null; // Success
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        return e.response!.data['message']?.toString() ?? 'Gagal mengirim OTP';
+      }
+      return 'Gagal terhubung ke server';
+    } catch (e) {
+      return 'Terjadi kesalahan tidak terduga';
+    }
+    return 'Gagal mengirim OTP';
+  }
+
+  Future<String?> confirmPasswordReset(String emailInput, String otp, String newPassword) async {
+    try {
+      final response = await ApiClient().dio.post('/auth/reset-password', data: {
+        'email': emailInput,
+        'otp': otp,
+        'newPassword': newPassword,
+      });
+
+      if (response.statusCode == 200) {
+        return null; // Success
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        return e.response!.data['message']?.toString() ?? 'Gagal mereset password';
+      }
+      return 'Gagal terhubung ke server';
+    } catch (e) {
+      return 'Terjadi kesalahan tidak terduga';
+    }
+    return 'Gagal mereset password';
   }
 
   Future<void> logout() async {
