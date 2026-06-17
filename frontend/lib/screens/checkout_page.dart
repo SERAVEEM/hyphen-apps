@@ -1040,10 +1040,10 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
       _phoneController.text = widget.initialAddress!.phone;
       _addressController.text = widget.initialAddress!.fullAddress;
     } else {
-      // Default placeholder address
-      _nameController.text = 'Alvin Cihuy';
-      _phoneController.text = '+62 812-3456-7890';
-      _addressController.text = 'Jalan Sandang No D5B, RT 1/RW 11, Palmerah, Kota Jakarta Barat, DKI Jakarta, ID 11480';
+      // Keep controllers empty initially so examples act as hints/placeholders
+      _nameController.text = '';
+      _phoneController.text = '';
+      _addressController.text = '';
     }
 
     // Clear SnackBar
@@ -1122,10 +1122,16 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
                         children: [
                           TextField(
                             controller: _nameController,
-                            style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14, 
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Nama Penerima',
                               labelStyle: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.black54),
+                              hintText: 'Contoh: Joel Abner',
+                              hintStyle: GoogleFonts.plusJakartaSans(fontSize: 14, color: Colors.black26),
                               border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                               contentPadding: const EdgeInsets.symmetric(vertical: 4),
                             ),
@@ -1133,10 +1139,15 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
                           const SizedBox(height: 8),
                           TextField(
                             controller: _phoneController,
-                            style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              color: Colors.black87,
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Nomor Telepon',
                               labelStyle: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.black54),
+                              hintText: 'Contoh: 089507274535',
+                              hintStyle: GoogleFonts.plusJakartaSans(fontSize: 14, color: Colors.black26),
                               border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                               contentPadding: const EdgeInsets.symmetric(vertical: 4),
                             ),
@@ -1156,10 +1167,16 @@ class _CheckoutPengisianPageState extends State<CheckoutPengisianPage> {
                           TextField(
                             controller: _addressController,
                             maxLines: 3,
-                            style: GoogleFonts.plusJakartaSans(fontSize: 13, height: 1.4),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13, 
+                              height: 1.4,
+                              color: Colors.black87,
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Alamat Lengkap',
                               labelStyle: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.black54),
+                              hintText: 'Contoh: Jalan Sandang No D5B, RT 1/RW 11, Palmerah, Kota Jakarta Barat, DKI Jakarta, ID 11480',
+                              hintStyle: GoogleFonts.plusJakartaSans(fontSize: 13, color: Colors.black26),
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(vertical: 6),
                             ),
