@@ -234,7 +234,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     children: [
 
                       TextButton(
-                        onPressed: () => debugPrint('Skip tapped'),
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HomePage(initialIndex: 0),
+                            ),
+                          );
+                        },
                         child: const Text(
                           'Skip',
                           style: TextStyle(
@@ -250,7 +257,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const HomePage(),
+                              builder: (context) => const HomePage(initialIndex: 1),
                             ),
                           );
                         },

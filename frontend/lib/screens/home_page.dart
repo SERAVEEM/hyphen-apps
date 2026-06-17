@@ -15,20 +15,22 @@ import 'package:hyphen/managers/auth_manager.dart';
 import 'package:hyphen/screens/hot_items_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final int initialIndex;
+  const HomePage({super.key, this.initialIndex = 0});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
   int _devTapCount = 0;
   DateTime? _lastDevTapTime;
 
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     // Fetch real products and check login status when Home Page loads
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ProductManager().fetchProducts();
