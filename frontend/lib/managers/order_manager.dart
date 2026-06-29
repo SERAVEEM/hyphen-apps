@@ -116,6 +116,23 @@ class OrderManager extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchAdminOrders() async {
+    try {
+      final response = await ApiClient().dio.get('/order/orders');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data['data'] ?? [];
+        _orders.clear();
+        _orders.addAll(data.map((json) => OrderItem.fromJson(json)).toList());
+        notifyListeners();
+      }
+    } on DioException catch (e) {
+      print('Error fetching admin orders: ${e.response?.data}');
+    } catch (e) {
+      print('Unexpected error fetching admin orders: $e');
+    }
+  }
+
+
   OrderManager._internal() {
     // Seed initial mock orders based on the Figma "order history 1" image
     _orders.addAll([

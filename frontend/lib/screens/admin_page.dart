@@ -33,6 +33,7 @@ class _AdminPageState extends State<AdminPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AdminManager().fetchDashboardStats();
       AdminManager().fetchPendingProducts();
+      OrderManager().fetchAdminOrders();
     });
   }
 
@@ -92,6 +93,9 @@ class _AdminPageState extends State<AdminPage> {
             setState(() {
               _currentTab = index;
             });
+            if (index == 2) {
+              OrderManager().fetchAdminOrders();
+            }
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
@@ -1075,12 +1079,31 @@ class _AdminPageState extends State<AdminPage> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    order.product.imageUrl,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                  ),
+                  child: order.product.imageUrl.startsWith('http')
+                      ? Image.network(
+                          order.product.imageUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey.shade100,
+                            child: const Icon(Icons.image_outlined, color: Colors.black38),
+                          ),
+                        )
+                      : Image.asset(
+                          order.product.imageUrl.isNotEmpty ? order.product.imageUrl : 'assets/images/placeholder.png',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey.shade100,
+                            child: const Icon(Icons.image_outlined, color: Colors.black38),
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
