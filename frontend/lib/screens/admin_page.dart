@@ -1164,7 +1164,7 @@ class _AdminPageState extends State<AdminPage> {
                         showDialog(
                           context: context,
                           barrierDismissible: false,
-                          builder: (context) => const Center(
+                          builder: (context) => Center(
                             child: CircularProgressIndicator(color: brandColor),
                           ),
                         );
@@ -1204,7 +1204,7 @@ class _AdminPageState extends State<AdminPage> {
                         showDialog(
                           context: context,
                           barrierDismissible: false,
-                          builder: (context) => const Center(
+                          builder: (context) => Center(
                             child: CircularProgressIndicator(color: brandColor),
                           ),
                         );
