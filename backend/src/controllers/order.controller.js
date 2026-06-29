@@ -219,11 +219,11 @@ const cancelOrder = async (req, res) => {
         if (order[0].buyerID !== buyerID) {
             return res.status(403).json({ message: 'Akses tidak diizinkan' });
         }
-        if (order[0].status !== 'pending') {
+        if (order[0].status !== 'pending' && order[0].status !== 'waiting_payment') {
             return res.status(400).json({
                 message: 'Order tidak bisa dibatalkan',
                 orderStatus: order[0].status,
-                info: 'Hanya order dengan status "pending" yang bisa dibatalkan'
+                info: 'Hanya order dengan status "pending" atau "waiting_payment" yang bisa dibatalkan'
             });
         }
 
@@ -233,6 +233,7 @@ const cancelOrder = async (req, res) => {
         );
 
         await pool.query('UPDATE orders SET status = "cancelled" WHERE id = ?', [orderId]);
+        await pool.query('UPDATE payments SET status = "cancelled" WHERE orderId = ? AND status = "pending"', [orderId]);
 
         const detail = await getOrderDetail(orderId);
 
