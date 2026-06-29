@@ -247,14 +247,22 @@ const cancelOrder = async (req, res) => {
     }
 };
 
-// ========================= UPDATE ORDER STATUS (ADMIN) =========================
 const updateOrderStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
-        const { status } = req.body;
+        let { status } = req.body;
 
-        const validStatuses = ['pending', 'waiting_payment', 'paid', 'shipping', 'cancelled', 'disputed'];
-        if (!status || !validStatuses.includes(status.toLowerCase())) {
+        if (!status) {
+            return res.status(400).json({ message: 'Status wajib diisi' });
+        }
+
+        let statusLower = status.toLowerCase();
+        if (statusLower === 'shipping') {
+            statusLower = 'shipped';
+        }
+
+        const validStatuses = ['pending', 'waiting_payment', 'paid', 'shipped', 'cancelled', 'disputed'];
+        if (!validStatuses.includes(statusLower)) {
             return res.status(400).json({ message: 'Status tidak valid', validStatuses });
         }
 
@@ -263,11 +271,10 @@ const updateOrderStatus = async (req, res) => {
             return res.status(404).json({ message: 'Order tidak ditemukan' });
         }
 
-        const statusLower = status.toLowerCase();
         await pool.query('UPDATE orders SET status = ? WHERE id = ?', [statusLower, orderId]);
 
         // Also update associated shipment status if we mark it as shipping/cancelled
-        if (statusLower === 'shipping') {
+        if (statusLower === 'shipped') {
             await pool.query("UPDATE shipments SET status = 'shipped' WHERE orderId = ?", [orderId]);
         } else if (statusLower === 'cancelled') {
             await pool.query("UPDATE shipments SET status = 'cancelled' WHERE orderId = ?", [orderId]);

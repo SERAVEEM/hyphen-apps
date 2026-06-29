@@ -34,7 +34,7 @@ class OrderItem {
     OrderStatus status = OrderStatus.processing;
     final statusStr = json['orderStatus']?.toString().toLowerCase() ?? 'pending';
     
-    if (statusStr == 'shipping') {
+    if (statusStr == 'shipping' || statusStr == 'shipped') {
       status = OrderStatus.shipping;
     } else if (statusStr == 'disputed' || statusStr == 'cancelled') {
       status = OrderStatus.disputed;
